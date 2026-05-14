@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<title>AA Drive</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#070b12;--card:#14223a;--hdr:#0a1628;--acc:#1d6aeb;--txt:#eef3ff;--dim:#7b91b8;--bdr:#1b3560;--grn:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;user-select:none}
+
+/* ── PORTRAIT BLOCKER ── */
+.pmsg{display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:20px;font-size:18px;font-weight:700;text-align:center;padding:30px}
+.pmsg .big{font-size:72px;animation:spin2 2s linear infinite}
+@keyframes spin2{0%{transform:rotate(0deg)}50%{transform:rotate(90deg)}100%{transform:rotate(0deg)}}
+@media(orientation:portrait){.pmsg{display:flex}}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;height:100dvh;width:100vw;overflow:hidden}
+.screen.active{display:flex}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(180deg,#0a1a38,#0d1724);border-bottom:1px solid var(--bdr);padding:6px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:46px}
+.back{background:rgba(255,255,255,.08);border:1px solid var(--bdr);color:var(--txt);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.htitle{font-size:17px;font-weight:700;flex:1}
+.hacts{display:flex;gap:4px;flex-wrap:wrap}
+.hbtn{background:rgba(255,255,255,.07);border:1px solid var(--bdr);color:var(--txt);padding:4px 9px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;white-space:nowrap}
+.hbtn.on{background:var(--acc);border-color:var(--acc)}
+
+/* ── HOME ── */
+#sHome{position:relative}
+.hw{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 60% 50% at 15% 75%,rgba(239,68,68,.14),transparent 60%),radial-gradient(ellipse 50% 40% at 85% 25%,rgba(29,106,235,.11),transparent 55%),linear-gradient(160deg,#07090f,#0e1826)}
+.hw::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 48%,rgba(255,255,255,.012) 49%,rgba(255,255,255,.012) 51%,transparent 52%);animation:lns 5s linear infinite}
+@keyframes lns{to{background-position:200px 0}}
+.hbar{position:relative;z-index:1;background:linear-gradient(180deg,rgba(8,18,48,.9),transparent);padding:10px 18px 8px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.mic{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);color:var(--txt);width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:19px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.aname{flex:1;text-align:center;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px}
+.wchip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.11);border-radius:22px;padding:5px 12px;font-size:13px;white-space:nowrap}
+.clk{font-family:'Orbitron',monospace;font-size:19px;font-weight:700;white-space:nowrap}
+.hcontent{position:relative;z-index:1;flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:8px;flex:1}
+.tile{background:rgba(14,24,46,.82);border:1px solid rgba(29,106,235,.2);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;cursor:pointer;transition:.18s}
+.tile:active{background:rgba(29,106,235,.22);border-color:var(--acc);transform:scale(.95)}
+.ti{font-size:30px}.tn{font-size:13px;font-weight:700;text-align:center}
+.hmeta{font-size:11px;color:var(--dim);line-height:1.6}
+
+/* ── SCROLLBODY ── */
+.sbody{flex:1;overflow-y:auto;padding:10px}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--bdr)}
+.stitle{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin:9px 0 6px}
+
+/* ── RADIO LANDSCAPE 2-PANEL ── */
+.radio-body{flex:1;display:grid;grid-template-columns:1fr 280px;overflow:hidden;min-height:0}
+.radio-list{overflow-y:auto;padding:10px;border-right:1px solid var(--bdr)}
+.radio-player{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 14px;background:rgba(10,22,48,.5);gap:12px}
+.sbar{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.sinp{background:none;border:none;color:var(--txt);font-family:'Rajdhani',sans-serif;font-size:14px;flex:1;outline:none}
+.sinp::placeholder{color:var(--dim)}
+.rcats{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px}
+.rcat{border-radius:10px;padding:11px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;font-size:13px;font-weight:700;border:none;color:#fff}
+.rcat:active{transform:scale(.95)}
+.rcat.cp{background:linear-gradient(135deg,#1a3fa8,#2563eb)}
+.rcat.cf{background:linear-gradient(135deg,#b84a0a,#ea580c)}
+.rcat.cr{background:linear-gradient(135deg,#6b21a8,#9333ea)}
+.rcat.ct{background:linear-gradient(135deg,#065f46,#059669)}
+.slist{display:flex;flex-direction:column;gap:5px}
+.si{background:var(--card);border:1px solid var(--bdr);border-radius:9px;padding:9px 11px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:.15s}
+.si:hover{border-color:var(--acc)}.si.now{border-color:var(--acc);background:rgba(29,106,235,.14)}
+.slogo{width:38px;height:38px;border-radius:8px;background:linear-gradient(135deg,var(--acc),#1e3fa8);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0}
+.slogo img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+.sinfo{flex:1;min-width:0}
+.sn{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{font-size:10px;color:var(--dim);margin-top:1px}
+.spl{width:30px;height:30px;border-radius:50%;background:var(--acc);border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.spl:active{transform:scale(.9)}
+/* Player panel */
+.player-logo{width:80px;height:80px;border-radius:16px;background:linear-gradient(135deg,var(--acc),#0a1f50);display:flex;align-items:center;justify-content:center;font-size:38px;overflow:hidden;border:2px solid var(--bdr)}
+.player-logo img{width:100%;height:100%;object-fit:cover;border-radius:14px}
+.player-name{font-size:15px;font-weight:700;text-align:center;max-width:240px;line-height:1.3}
+.player-tags{font-size:11px;color:var(--dim);text-align:center}
+.player-live{font-size:11px;color:var(--grn);display:flex;align-items:center;gap:4px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--grn);animation:bl 1.1s infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+.player-err{font-size:11px;color:#f87171;text-align:center;padding:0 8px;display:none}
+.player-ctrls{display:flex;gap:12px;align-items:center}
+.pcb{border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-size:18px}
+.pcb.main{background:var(--acc);width:52px;height:52px;font-size:22px;box-shadow:0 0 20px rgba(29,106,235,.4)}
+.pcb.sec{background:rgba(255,255,255,.1);color:var(--txt);width:42px;height:42px}
+.pcb.fav{background:none;color:var(--txt);width:42px;height:42px;font-size:22px}
+.pcb:active{transform:scale(.9)}
+.load{display:flex;align-items:center;justify-content:center;padding:22px;color:var(--dim);flex-direction:column;gap:8px;font-size:13px}
+.spin{width:24px;height:24px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── SPEEDOMETER — sin barras, canvas full-screen ── */
+#sSpeedo{position:relative;background:#000;overflow:hidden}
+#sSpeedo::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 40% 80% at 2% 55%,rgba(170,10,0,.42) 0%,transparent 60%),
+             radial-gradient(ellipse 40% 80% at 98% 55%,rgba(170,10,0,.35) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 40% at 50% 110%,rgba(30,0,0,.8) 0%,transparent 60%)}
+#sc{position:absolute;inset:0;display:block;width:100%;height:100%}
+/* Floating back */
+.sp-back{position:absolute;top:10px;left:10px;z-index:30;background:rgba(0,0,0,.75);
+  border:1px solid rgba(255,255,255,.22);color:#fff;width:38px;height:38px;border-radius:10px;
+  cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(6px)}
+/* Floating controls top-right */
+.sp-ctrls{position:absolute;top:10px;right:10px;z-index:30;display:flex;gap:6px}
+.sp-btn{background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.22);color:#fff;
+  padding:5px 11px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;
+  font-size:12px;font-weight:700;backdrop-filter:blur(6px)}
+.sp-btn.on{background:var(--acc);border-color:var(--acc)}
+/* Brand cycle button — center top */
+.sp-brand{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:30;
+  background:rgba(0,0,0,.8);border:1px solid rgba(255,255,255,.3);color:#fff;
+  padding:6px 20px;border-radius:20px;cursor:pointer;font-family:'Rajdhani',sans-serif;
+  font-size:14px;font-weight:700;backdrop-filter:blur(6px);white-space:nowrap;
+  display:flex;align-items:center;gap:8px}
+/* GPS badge */
+.gpsb{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:30;
+  display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 11px;
+  border-radius:18px;background:rgba(0,0,0,.75);border:1px solid rgba(239,68,68,.4);
+  color:#f87171;backdrop-filter:blur(6px);white-space:nowrap}
+.gpsb.ok{border-color:rgba(34,197,94,.45);color:#4ade80}
+/* Stats overlaid — bottom corners like reference */
+.sp-stats{position:absolute;z-index:30;pointer-events:none}
+.sp-stats.left{bottom:28px;left:24px;text-align:left}
+.sp-stats.right{bottom:28px;right:24px;text-align:right}
+.sp-stats.center{bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:28px;text-align:center}
+.sp-sl{display:block;font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;line-height:1}
+.sp-sv{display:block;font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:#fff;margin-top:2px}
+.sp-row{margin-bottom:12px}
+
+/* ── MAP NAV — full-screen no bars ── */
+#sNav{position:relative;overflow:hidden}
+#mapEl{position:absolute;inset:0;z-index:0}
+/* All nav controls float over the map */
+.nv-float{position:absolute;z-index:500;pointer-events:all}
+/* Search bar — top, full width minus margins */
+.nv-search{top:10px;left:56px;right:10px;display:flex;gap:6px;align-items:center}
+.nvinp{background:rgba(8,16,36,.88);border:1px solid rgba(255,255,255,.22);color:#fff;
+  font-family:'Rajdhani',sans-serif;font-size:14px;flex:1;border-radius:10px;
+  padding:9px 13px;outline:none;backdrop-filter:blur(8px)}
+.nvinp::placeholder{color:rgba(255,255,255,.45)}
+.nvb{padding:8px 13px;border-radius:10px;cursor:pointer;font-weight:700;
+  font-family:'Rajdhani',sans-serif;font-size:13px;white-space:nowrap;border:none;
+  color:#fff;backdrop-filter:blur(6px)}
+.nvb.b{background:rgba(26,115,232,.92)}.nvb.g{background:rgba(15,157,88,.92)}.nvb.w{background:rgba(227,116,0,.92)}
+/* Back button — top left */
+.nv-back{top:10px;left:10px;background:rgba(8,16,36,.88);border:1px solid rgba(255,255,255,.22);
+  color:#fff;width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:18px;
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+/* Route message toast — below search */
+.nvmsg{top:62px;left:56px;right:10px;padding:6px 12px;border-radius:8px;
+  font-size:12px;color:#fff;background:rgba(8,16,36,.82);border:1px solid rgba(29,106,235,.4);
+  display:none;backdrop-filter:blur(8px);font-family:'Rajdhani',sans-serif}
+/* Apps ext button — top right corner */
+.nv-apps{top:60px;right:10px;background:rgba(8,16,36,.88);border:1px solid rgba(255,255,255,.22);
+  color:#fff;padding:5px 11px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;
+  font-size:11px;font-weight:700;backdrop-filter:blur(6px)}
+/* Stats — bottom bar floating */
+.nv-stats{bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-evenly;
+  padding:8px 12px;background:rgba(4,8,20,.85);backdrop-filter:blur(8px);
+  border-top:1px solid rgba(255,255,255,.08)}
+.nvs{text-align:center;flex:1}
+.nvsl{font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;display:block}
+.nvsv{font-size:13px;font-weight:700;font-family:'Orbitron',monospace;display:block;color:#fff;margin-top:1px}
+.nvsep{width:1px;height:28px;background:rgba(255,255,255,.1);flex-shrink:0}
+
+/* ── APP LINKS ── */
+.nlist{display:flex;flex-direction:column;gap:9px;padding:10px}
+.nrow{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:13px;display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--txt);transition:.15s}
+.nrow:hover{border-color:var(--acc)}
+.nico{font-size:32px;flex-shrink:0}.ninf{flex:1}.nn{font-size:16px;font-weight:700}.nd{font-size:11px;color:var(--dim);margin-top:1px}
+
+/* ── SETTINGS ── */
+.setl{display:flex;flex-direction:column;gap:6px}
+.setr{background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.seti{font-size:21px;color:var(--acc);flex-shrink:0}
+.setin{flex:1}.sett{font-size:14px;font-weight:700}.sets{font-size:11px;color:var(--dim);margin-top:1px}
+</style>
+</head>
+<body>
+
+<!-- Portrait blocker -->
+<div class="pmsg">
+  <div class="big">🔄</div>
+  <div>Gira el dispositivo<br>a <strong>horizontal</strong><br><span style="color:var(--dim);font-size:14px">AA Drive está optimizado para pantallas de coche</span></div>
+</div>
+
+<!-- HOME -->
+<div id="sHome" class="screen active">
+  <div class="hw"></div>
+  <div class="hbar">
+    <button class="mic">🎙️</button>
+    <div class="aname">🚗 AA Drive</div>
+    <div class="wchip">⛅ <span id="wt">--</span>°C <span id="wc">España</span></div>
+    <div class="clk" id="clk">--:--</div>
+  </div>
+  <div class="hcontent">
+    <div class="grid">
+      <div class="tile" onclick="go('sRadio')"><div class="ti">📻</div><div class="tn">Radio</div></div>
+      <div class="tile" onclick="go('sSpeedo')"><div class="ti">🏎️</div><div class="tn">Velocímetro</div></div>
+      <div class="tile" onclick="go('sNav')"><div class="ti">🗺️</div><div class="tn">Navegación</div></div>
+      <div class="tile" onclick="go('sPodcast')"><div class="ti">🎙️</div><div class="tn">Podcast</div></div>
+      <div class="tile" onclick="go('sMusic')"><div class="ti">🎵</div><div class="tn">Música</div></div>
+      <div class="tile" onclick="go('sSettings')"><div class="ti">⚙️</div><div class="tn">Ajustes</div></div>
+    </div>
+    <div class="hmeta">✅ Radio real · Velocímetro GPS 12 marcas · Navegación OSM · Podcast · Música &nbsp;|&nbsp; <span style="color:#f87171">✗ YouTube · IPTV — No permitido en Android Auto</span></div>
+  </div>
+</div>
+
+<!-- RADIO -->
+<div id="sRadio" class="screen">
+  <div class="hdr">
+    <button class="back" onclick="go('sHome')">←</button>
+    <div class="htitle">📻 Radio en directo</div>
+    <div class="hacts">
+      <button class="hbtn" onclick="showView('rHome')">🏠 Inicio</button>
+      <button class="hbtn" onclick="loadCountries()">🌍 Países</button>
+      <button class="hbtn" id="rRetryBtn" onclick="retryPlay()" style="display:none;background:#ef4444;border-color:#ef4444">↺ Reintentar</button>
+    </div>
+  </div>
+  <div class="radio-body">
+    <!-- LIST PANEL -->
+    <div class="radio-list" id="radioList">
+      <div id="rHome">
+        <div class="sbar">
+          <span style="color:var(--dim);font-size:15px">🔍</span>
+          <input class="sinp" id="rsearch" placeholder="Buscar emisora…" oninput="onSearch(this.value)">
+          <button onclick="document.getElementById('rsearch').value='';showView('rHome')" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px">✕</button>
+        </div>
+        <div class="rcats">
+          <button class="rcat cp" onclick="loadByCC('ES','🇪🇸 España')"><span style="font-size:22px">🌍</span>Países</button>
+          <button class="rcat cf" onclick="showFavs()"><span style="font-size:22px">⭐</span>Favoritos</button>
+          <button class="rcat cr" onclick="showRecents()"><span style="font-size:22px">🕐</span>Recientes</button>
+          <button class="rcat ct" onclick="loadTop()"><span style="font-size:22px">🔥</span>Top Global</button>
+        </div>
+        <div class="stitle">📍 España — Emisoras verificadas</div>
+        <div class="slist" id="rReg"><div class="load"><div class="spin"></div></div></div>
+      </div>
+      <div id="rList" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <button onclick="showView('rHome')" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:18px">←</button>
+          <div class="stitle" style="margin:0" id="rLT"></div>
+        </div>
+        <div class="slist" id="rItems"></div>
+      </div>
+      <div id="rCntr" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <button onclick="showView('rHome')" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:18px">←</button>
+          <div class="stitle" style="margin:0">Selecciona país</div>
+        </div>
+        <div class="slist" id="rCI"></div>
+      </div>
+    </div>
+    <!-- PLAYER PANEL -->
+    <div class="radio-player">
+      <div class="player-logo" id="playerLogo">📻</div>
+      <div class="player-name" id="playerName">Selecciona una emisora</div>
+      <div class="player-tags" id="playerTags">Radio · En directo</div>
+      <div class="player-live" id="playerLive" style="display:none"><div class="dot"></div> EN DIRECTO</div>
+      <div class="player-err" id="playerErr">⚠️ No se pudo conectar. Prueba otra emisora.</div>
+      <div class="player-ctrls">
+        <button class="pcb sec" onclick="prevStation()">⏮</button>
+        <button class="pcb main" id="pbtn" onclick="togglePlay()">▶</button>
+        <button class="pcb sec" onclick="nextStation()">⏭</button>
+        <button class="pcb fav" id="fbtn" onclick="toggleFav()">🤍</button>
+      </div>
+    </div>
+  </div>
+  <audio id="aud" preload="none"></audio>
+</div>
+
+<!-- SPEEDOMETER -->
+<div id="sSpeedo" class="screen">
+  <canvas id="sc" width="100" height="100"></canvas>
+  <!-- Back -->
+  <button class="sp-back" onclick="go('sHome')">←</button>
+  <!-- Brand cycle -->
+  <button class="sp-brand" id="brandBtn" onclick="nextBrand()"><span id="brandLabel">AMG PERFORMANCE</span> <span style="opacity:.5">›</span></button>
+  <!-- GPS -->
+  <div class="gpsb" id="gpsb">📡 Iniciando GPS…</div>
+  <!-- Controls top-right -->
+  <div class="sp-ctrls">
+    <button class="sp-btn on" id="ubtn" onclick="toggleUnit()">KM/H</button>
+    <button class="sp-btn" onclick="rA()">R.A</button>
+    <button class="sp-btn" onclick="rB()">R.B</button>
+    <button class="sp-btn" id="simbtn" onclick="toggleSim()">SIM ▶</button>
+  </div>
+  <!-- Stats corners -->
+  <div class="sp-stats left">
+    <div class="sp-row"><span class="sp-sl">Vel. Máx</span><span class="sp-sv" id="stmax">0 km/h</span></div>
+    <div class="sp-row"><span class="sp-sl">Trip A</span><span class="sp-sv" id="stta">0.0 km</span></div>
+  </div>
+  <div class="sp-stats right">
+    <div class="sp-row"><span class="sp-sl">Vel. Media</span><span class="sp-sv" id="stavg">0 km/h</span></div>
+    <div class="sp-row"><span class="sp-sl">Trip B</span><span class="sp-sv" id="sttb">0.0 km</span></div>
+  </div>
+  <div class="sp-stats center">
+    <div><span class="sp-sl">RPM</span><span class="sp-sv" id="strpm">0.0k</span></div>
+    <div><span class="sp-sl">Total</span><span class="sp-sv" id="sttot">0.0 km</span></div>
+  </div>
+</div>
+
+<!-- NAVIGATION -->
+<div id="sNav" class="screen">
+  <!-- Map takes full screen -->
+  <div id="mapEl"></div>
+  <!-- Floating back -->
+  <button class="nv-float nv-back" onclick="go('sHome')">←</button>
+  <!-- Floating search row -->
+  <div class="nv-float nv-search">
+    <input class="nvinp" id="navQ" placeholder="¿A dónde vamos? (ciudad, dirección…)" onkeydown="if(event.key==='Enter')doRoute()">
+    <button class="nvb b" onclick="doRoute()">🗺 Ruta</button>
+    <button class="nvb g" onclick="openExt('gmaps')">GMaps</button>
+    <button class="nvb w" onclick="openExt('waze')">Waze</button>
+  </div>
+  <!-- Route message toast -->
+  <div class="nv-float nvmsg" id="nvmsg"></div>
+  <!-- Apps ext -->
+  <button class="nv-float nv-apps" onclick="go('sNavApps')">Apps ›</button>
+  <!-- Stats floating bar at bottom -->
+  <div class="nv-float nv-stats">
+    <div class="nvs"><span class="nvsl">Velocidad</span><span class="nvsv" id="navSpd">0</span></div>
+    <div class="nvsep"></div>
+    <div class="nvs"><span class="nvsl">Distancia</span><span class="nvsv" id="navDist">—</span></div>
+    <div class="nvsep"></div>
+    <div class="nvs"><span class="nvsl">Tiempo</span><span class="nvsv" id="navTime">—</span></div>
+    <div class="nvsep"></div>
+    <div class="nvs"><span class="nvsl">GPS</span><span class="nvsv" id="navPos" style="font-size:9px;font-family:'Rajdhani',sans-serif">—</span></div>
+  </div>
+</div>
+
+<!-- NAV APPS -->
+<div id="sNavApps" class="screen">
+  <div class="hdr"><button class="back" onclick="go('sNav')">←</button><div class="htitle">Apps de Navegación</div></div>
+  <div class="sbody"><div class="nlist">
+    <a class="nrow" href="https://maps.google.com" target="_blank"><div class="nico">🗺️</div><div class="ninf"><div class="nn">Google Maps</div><div class="nd">Tráfico real · Android Auto nativo</div></div><div style="color:var(--dim)">›</div></a>
+    <a class="nrow" href="https://waze.com" target="_blank"><div class="nico">🚦</div><div class="ninf"><div class="nn">Waze</div><div class="nd">Radares · Alertas de tráfico</div></div><div style="color:var(--dim)">›</div></a>
+    <a class="nrow" href="https://maps.here.com" target="_blank"><div class="nico">📍</div><div class="ninf"><div class="nn">HERE WeGo</div><div class="nd">Mapas offline disponibles</div></div><div style="color:var(--dim)">›</div></a>
+  </div></div>
+</div>
+
+<!-- PODCAST -->
+<div id="sPodcast" class="screen">
+  <div class="hdr"><button class="back" onclick="go('sHome')">←</button><div class="htitle">🎙️ Podcast</div></div>
+  <div class="sbody"><div class="nlist">
+    <a class="nrow" href="https://open.spotify.com/podcasts" target="_blank"><div class="nico">🎵</div><div class="ninf"><div class="nn">Spotify Podcasts</div><div class="nd">Millones de podcasts · Android Auto</div></div><div style="color:var(--dim)">›</div></a>
+    <a class="nrow" href="https://www.ivoox.com" target="_blank"><div class="nico">🎙️</div><div class="ninf"><div class="nn">iVoox</div><div class="nd">Podcasts en español · Android Auto</div></div><div style="color:var(--dim)">›</div></a>
+    <a class="nrow" href="https://pocketcasts.com" target="_blank"><div class="nico">📡</div><div class="ninf"><div class="nn">Pocket Casts</div><div class="nd">Gestión avanzada · Compatible AA</div></div><div style="color:var(--dim)">›</div></a>
+  </div></div>
+</div>
+
+<!-- MUSIC -->
+<div id="sMusic" class="screen">
+  <div class="hdr"><button class="back" onclick="go('sHome')">←</button><div class="htitle">🎵 Música</div></div>
+  <div class="sbody"><div class="nlist">
+    <a class="nrow" href="https://spotify.com" target="_blank"><div class="nico">🎵</div><div class="ninf"><div class="nn">Spotify</div><div class="nd">Streaming · Android Auto nativo</div></div><div style="color:var(--dim)">›</div></a>
+    <a class="nrow" href="https://music.youtube.com" target="_blank"><div class="nico">🎶</div><div class="ninf"><div class="nn">YouTube Music</div><div class="nd">Solo audio · Compatible Android Auto</div></div><div style="color:var(--dim)">›</div></a>
+    <a class="nrow" href="https://tidal.com" target="_blank"><div class="nico">🎧</div><div class="ninf"><div class="nn">TIDAL</div><div class="nd">Alta fidelidad · Android Auto</div></div><div style="color:var(--dim)">›</div></a>
+    <a class="nrow" href="https://deezer.com" target="_blank"><div class="nico">🎼</div><div class="ninf"><div class="nn">Deezer</div><div class="nd">Streaming · Android Auto</div></div><div style="color:var(--dim)">›</div></a>
+  </div></div>
+</div>
+
+<!-- SETTINGS -->
+<div id="sSettings" class="screen">
+  <div class="hdr"><button class="back" onclick="go('sHome')">←</button><div class="htitle">⚙️ Ajustes</div></div>
+  <div class="sbody"><div class="setl">
+    <div class="setr" onclick="cycleTheme()"><div class="seti">🎨</div><div class="setin"><div class="sett">Tema de color</div><div class="sets" id="thLabel">Azul</div></div><div style="color:var(--dim)">›</div></div>
+    <div class="setr" onclick="toggleUnit()"><div class="seti">⚡</div><div class="setin"><div class="sett">Unidad velocidad</div><div class="sets" id="unitLabel">KM/H</div></div><div style="color:var(--dim)">›</div></div>
+    <div class="setr"><div class="seti">🌍</div><div class="setin"><div class="sett">Idioma</div><div class="sets">Español</div></div><div style="color:var(--dim)">›</div></div>
+    <div class="setr"><div class="seti">📱</div><div class="setin"><div class="sett">Versión</div><div class="sets">AA Drive v2.1 · GitHub Pages</div></div></div>
+  </div></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+
+/* ── ORIENTATION LOCK ── */
+try { screen.orientation?.lock('landscape').catch(()=>{}); } catch(e){}
+
+/* ── CLOCK ── */
+(function tick(){const n=new Date();document.getElementById('clk').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');setTimeout(tick,30000);})();
+
+/* ── WEATHER ── */
+(async()=>{try{let la=40.4168,lo=-3.7038;await new Promise(r=>navigator.geolocation?.getCurrentPosition(p=>{la=p.coords.latitude;lo=p.coords.longitude;r();},r,{timeout:4000}));const w=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la.toFixed(2)}&longitude=${lo.toFixed(2)}&current_weather=true`)).json();document.getElementById('wt').textContent=Math.round(w.current_weather.temperature);const g=await(await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${la.toFixed(4)}&lon=${lo.toFixed(4)}`)).json();document.getElementById('wc').textContent=g.address?.city||g.address?.town||g.address?.village||'España';}catch(e){}})();
+
+/* ── SCREENS ── */
+const screens=document.querySelectorAll('.screen');
+function go(id){
+  screens.forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='sSpeedo'){
+    /* Double RAF: guarantees browser has fully painted + measured layout */
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(!spRun)startSpeedo(); else resizeSpeedo();
+    }));
+  }
+  if(id==='sRadio'&&!radInit)initRadio();
+  if(id==='sNav'&&!mapInit)initMap();
+}
+
+/* Resize using window dimensions minus known fixed element heights (reliable) */
+function resizeSpeedo(){
+  if(!CAN)return;
+  const hdr=document.querySelector('#sSpeedo .hdr');
+  const bar=document.querySelector('#sSpeedo .spBar');
+  const hH=hdr?hdr.offsetHeight:40;
+  const bH=bar?bar.offsetHeight:52;
+  const avW=window.innerWidth-2;
+  const avH=window.innerHeight-hH-bH-2;
+  const sz=Math.max(120,Math.floor(Math.min(avW,avH)));
+  CAN.width=sz; CAN.height=sz;
+  CAN.style.width=sz+'px'; CAN.style.height=sz+'px';
+  draw(dS);
+}
+window.addEventListener('resize',()=>{if(document.getElementById('sSpeedo').classList.contains('active'))resizeSpeedo();});
+
+/* ═══════════════ RADIO ═══════════════ */
+const aud=document.getElementById('aud');
+let curSt=null,playing=false,radInit=false,curList=[],curIdx=-1;
+let favs=JSON.parse(localStorage.getItem('aaDFavs')||'[]');
+let recents=JSON.parse(localStorage.getItem('aaDRec')||'[]');
+
+/* Radio Browser API with mirror fallback */
+const RBMIRRORS=['de1','at1','nl1'];
+async function rbF(path){
+  for(const m of RBMIRRORS){
+    try{const r=await fetch(`https://${m}.api.radio-browser.info/json/${path}`,{signal:AbortSignal.timeout(5000)});if(r.ok)return r.json();}catch(e){}
+  }
+  return null;
+}
+
+/* ── STREAMS VERIFICADOS ──────────────────────────────────────────────────
+   Todos HTTPS directos. Fuentes: RTVE/Cires21, RadioFrance/icecast,
+   BBC bbcmedia (World Service), ARD/rndfnk, StreamTheWorld, Cires21-Kiss
+   ── */
+const VERIFIED=[
+  /* ESPAÑA — RTVE (Cires21) ← MP3 directo, sin CORS necesario */
+  {stationuuid:'es01',name:'RNE Radio Nacional',  tags:'noticias,generalista',  countrycode:'ES',favicon:'https://www.rtve.es/favicon.ico',   url_resolved:'https://rne.rtveradio.cires21.com/rne_hc.mp3'},
+  {stationuuid:'es02',name:'RNE Radio Clásica',   tags:'clásica,cultura',       countrycode:'ES',favicon:'',url_resolved:'https://radioclasica.rtveradio.cires21.com/radioclasica_hc.mp3'},
+  {stationuuid:'es03',name:'RNE Radio 3',         tags:'alternativa,indie',     countrycode:'ES',favicon:'',url_resolved:'https://radio3.rtveradio.cires21.com/radio3_hc.mp3'},
+  {stationuuid:'es04',name:'RNE Radio 5',         tags:'noticias,flash',        countrycode:'ES',favicon:'',url_resolved:'https://radio5.rtveradio.cires21.com/radio5_hc.mp3'},
+  {stationuuid:'es05',name:'RNE Radio Exterior',  tags:'internacional,español',  countrycode:'ES',favicon:'',url_resolved:'https://radioexterior.rtveradio.cires21.com/radioexterior_hc.mp3'},
+  /* ESPAÑA — Cadena SER / Los 40 / Dial (StreamTheWorld, HTTPS redirect) */
+  {stationuuid:'es06',name:'Cadena SER',          tags:'noticias,información',  countrycode:'ES',favicon:'https://cadenaser.com/favicon.ico', url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/CADENASER.mp3'},
+  {stationuuid:'es07',name:'Los 40 España',       tags:'pop,hits',              countrycode:'ES',favicon:'https://www.los40.com/favicon.ico',  url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40.mp3'},
+  {stationuuid:'es08',name:'Los 40 Classic',      tags:'pop,80s,90s',           countrycode:'ES',favicon:'',url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40_CLASSIC.mp3'},
+  {stationuuid:'es09',name:'Los 40 Dance',        tags:'dance,electrónica',     countrycode:'ES',favicon:'',url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40_DANCE.mp3'},
+  {stationuuid:'es10',name:'Cadena Dial',         tags:'baladas,pop latino',    countrycode:'ES',favicon:'',url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/CADENADIAL.mp3'},
+  {stationuuid:'es11',name:'Radiolé',             tags:'flamenco,copla',        countrycode:'ES',favicon:'',url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/RADIOLEARAB.mp3'},
+  /* ESPAÑA — Kiss / Hit (Cires21) */
+  {stationuuid:'es12',name:'Kiss FM España',      tags:'dance,electrónica',     countrycode:'ES',favicon:'',url_resolved:'https://kissfm.kissfmradio.cires21.com/kissfm.mp3'},
+  {stationuuid:'es13',name:'Hit FM',              tags:'pop,hits',              countrycode:'ES',favicon:'',url_resolved:'https://hitfm.kissfmradio.cires21.com/hitfm.mp3'},
+  /* ESPAÑA — Europa FM / Onda Cero (Atresmedia redirect) */
+  {stationuuid:'es14',name:'Europa FM',           tags:'dance,pop',             countrycode:'ES',favicon:'',url_resolved:'https://radio-atres-live.ondacero.es/api/livestream-redirect/EFMAAC.aac'},
+  {stationuuid:'es15',name:'Onda Cero',           tags:'noticias,actualidad',   countrycode:'ES',favicon:'',url_resolved:'https://radio-atres-live.ondacero.es/api/livestream-redirect/OCAAC.aac'},
+  /* ESPAÑA — Cope (Flumotion MP3) */
+  {stationuuid:'es16',name:'Cadena COPE',         tags:'noticias,deportes',     countrycode:'ES',favicon:'https://www.cope.es/favicon.ico',    url_resolved:'https://flucast-m04-06.flumotion.com/cope/net1.mp3'},
+  {stationuuid:'es17',name:'COPE net2',           tags:'noticias,deportes',     countrycode:'ES',favicon:'',url_resolved:'https://flucast-m04-06.flumotion.com/cope/net2.mp3'},
+  /* FRANCE — RadioFrance/icecast (CORS * — los mejores del mundo para web) */
+  {stationuuid:'fr01',name:'France Inter',        tags:'información,generalista',countrycode:'FR',favicon:'',url_resolved:'https://icecast.radiofrance.fr/franceinter-midfi.mp3'},
+  {stationuuid:'fr02',name:'France Musique',      tags:'clásica,ópera',         countrycode:'FR',favicon:'',url_resolved:'https://icecast.radiofrance.fr/francemusique-midfi.mp3'},
+  {stationuuid:'fr03',name:'France Culture',      tags:'cultura,literatura',    countrycode:'FR',favicon:'',url_resolved:'https://icecast.radiofrance.fr/franceculture-midfi.mp3'},
+  {stationuuid:'fr04',name:'France Info',         tags:'noticias,24h',          countrycode:'FR',favicon:'',url_resolved:'https://icecast.radiofrance.fr/franceinfo-midfi.mp3'},
+  {stationuuid:'fr05',name:'FIP Radio',           tags:'jazz,alternativa,world',countrycode:'FR',favicon:'',url_resolved:'https://icecast.radiofrance.fr/fip-midfi.mp3'},
+  {stationuuid:'fr06',name:'FIP Rock',            tags:'rock,alternativa',      countrycode:'FR',favicon:'',url_resolved:'https://icecast.radiofrance.fr/fiprock-midfi.mp3'},
+  {stationuuid:'fr07',name:'FIP Jazz',            tags:'jazz,blues',            countrycode:'FR',favicon:'',url_resolved:'https://icecast.radiofrance.fr/fipjazz-midfi.mp3'},
+  {stationuuid:'fr08',name:'Mouv Radio',          tags:'hip-hop,rap,urbana',    countrycode:'FR',favicon:'',url_resolved:'https://icecast.radiofrance.fr/mouv-midfi.mp3'},
+  /* UK — BBC World Service (único que mantiene MP3 después de oct 2023) */
+  {stationuuid:'uk01',name:'BBC World Service',   tags:'news,english,world',    countrycode:'GB',favicon:'',url_resolved:'https://stream.live.vc.bbcmedia.co.uk/bbc_world_service'},
+  /* ALEMANIA — ARD/rndfnk (dispatcher, CORS *) */
+  {stationuuid:'de01',name:'Bayern 3',            tags:'pop,hits,Alemania',     countrycode:'DE',favicon:'',url_resolved:'https://dispatcher.rndfnk.com/br/br3/live/mp3/mid'},
+  {stationuuid:'de02',name:'SWR3',               tags:'pop,Alemania',          countrycode:'DE',favicon:'',url_resolved:'https://dispatcher.rndfnk.com/swr/swr3/live/mp3/128/stream.mp3'},
+  {stationuuid:'de03',name:'SWR2',               tags:'clásica,cultura,DE',    countrycode:'DE',favicon:'',url_resolved:'https://dispatcher.rndfnk.com/swr/swr2/live/aac/48/stream.aac'},
+];
+
+function fltH(list){
+  if(!list||!list.length)return [];
+  /* Only HTTPS — mixed content blocked on GitHub Pages */
+  return list.filter(x=>x.url_resolved?.startsWith('https://'));
+}
+
+async function initRadio(){
+  radInit=true;
+  /* Show all Spain verified stations immediately */
+  const esStations=VERIFIED.filter(s=>s.countrycode==='ES');
+  renderInto('rReg',esStations);
+  /* Then try to add more from Radio Browser API in background */
+  const api=await rbF('stations/search?countrycode=ES&limit=60&hidebroken=true&order=votes&reverse=true');
+  if(api){
+    const extra=fltH(api).filter(s=>!VERIFIED.find(v=>v.name===s.name));
+    renderInto('rReg',dedup([...esStations,...extra]).slice(0,24));
+  }
+}
+
+function dedup(arr){const seen=new Set();return arr.filter(s=>{if(seen.has(s.stationuuid))return false;seen.add(s.stationuuid);return true;});}
+
+function renderInto(elId,list){const el=document.getElementById(elId);el.innerHTML='';list.forEach((s,i)=>{el.appendChild(mkSt(s,i));});}
+
+function showView(id){['rHome','rList','rCntr'].forEach(v=>document.getElementById(v).style.display=v===id?'block':'none');}
+async function loadByCC(cc,name){
+  showView('rList');document.getElementById('rLT').textContent=name;
+  /* Show local verified first instantly */
+  const local=VERIFIED.filter(s=>s.countrycode===cc);
+  renderInto('rItems',local.length?local:VERIFIED);
+  curList=[...local];
+  /* Then fetch from API */
+  const api=await rbF(`stations/search?countrycode=${cc}&limit=60&hidebroken=true&order=votes&reverse=true`);
+  if(api){
+    const extra=fltH(api).filter(s=>!local.find(v=>v.name===s.name));
+    curList=dedup([...local,...extra]);
+    renderInto('rItems',curList.slice(0,30));
+  }
+}
+async function loadTop(){
+  showView('rList');document.getElementById('rLT').textContent='🔥 Top — Verificadas';
+  renderInto('rItems',VERIFIED);curList=[...VERIFIED];
+  const api=await rbF('stations/topvote/60');
+  if(api){const extra=fltH(api).filter(s=>!VERIFIED.find(v=>v.name===s.name));curList=dedup([...VERIFIED,...extra]);renderInto('rItems',curList.slice(0,30));}
+}
+async function loadCountries(){
+  showView('rCntr');document.getElementById('rCI').innerHTML='<div class="load"><div class="spin"></div></div>';
+  const all=await rbF('countries?order=stationcount&reverse=true&limit=80')||[];
+  const FL={ES:'🇪🇸',US:'🇺🇸',GB:'🇬🇧',DE:'🇩🇪',FR:'🇫🇷',IT:'🇮🇹',BR:'🇧🇷',AR:'🇦🇷',MX:'🇲🇽',PT:'🇵🇹',NL:'🇳🇱',AU:'🇦🇺',CA:'🇨🇦',PL:'🇵🇱',JP:'🇯🇵',TR:'🇹🇷',RU:'🇷🇺',CO:'🇨🇴',CL:'🇨🇱',PE:'🇵🇪',IN:'🇮🇳'};
+  const el=document.getElementById('rCI');el.innerHTML='';
+  (all.length?all:[{name:'Spain',iso_3166_1:'ES',stationcount:674},{name:'United States',iso_3166_1:'US',stationcount:5000},{name:'United Kingdom',iso_3166_1:'GB',stationcount:1200},{name:'Germany',iso_3166_1:'DE',stationcount:800},{name:'France',iso_3166_1:'FR',stationcount:700},{name:'Italy',iso_3166_1:'IT',stationcount:600},{name:'Brazil',iso_3166_1:'BR',stationcount:500},{name:'Mexico',iso_3166_1:'MX',stationcount:400}]).forEach(c=>{
+    const f=FL[c.iso_3166_1]||'🌍';const d=document.createElement('div');d.className='si';
+    d.innerHTML=`<div class="slogo">${f}</div><div class="sinfo"><div class="sn">${c.name}</div><div class="st">${c.stationcount||'?'} emisoras</div></div><div style="color:var(--dim)">›</div>`;
+    d.onclick=()=>loadByCC(c.iso_3166_1,`${f} ${c.name}`);el.appendChild(d);
+  });
+}
+
+let stTO=null;
+function onSearch(q){
+  clearTimeout(stTO);
+  if(q.length<2){showView('rHome');return;}
+  stTO=setTimeout(async()=>{
+    showView('rList');document.getElementById('rLT').textContent=`🔍 "${q}"`;
+    document.getElementById('rItems').innerHTML='<div class="load"><div class="spin"></div></div>';
+    const local=VERIFIED.filter(s=>s.name.toLowerCase().includes(q.toLowerCase())||s.tags.toLowerCase().includes(q.toLowerCase()));
+    const api=await rbF(`stations/search?name=${encodeURIComponent(q)}&limit=50&hidebroken=true&order=votes&reverse=true`)||[];
+    curList=dedup([...local,...fltH(api)]);renderInto('rItems',curList);
+  },500);
+}
+
+function showFavs(){showView('rList');document.getElementById('rLT').textContent='⭐ Favoritos';if(!favs.length){document.getElementById('rItems').innerHTML='<div class="load">Pulsa 🤍 para guardar favoritas</div>';}else{curList=[...favs];renderInto('rItems',curList);}}
+function showRecents(){showView('rList');document.getElementById('rLT').textContent='🕐 Recientes';if(!recents.length){document.getElementById('rItems').innerHTML='<div class="load">Sin recientes aún</div>';}else{curList=[...recents];renderInto('rItems',curList);}}
+
+function mkSt(s,idx){
+  const div=document.createElement('div');
+  div.className='si'+(curSt?.stationuuid===s.stationuuid?' now':'');
+  const tags=(s.tags||'').split(',').filter(Boolean).slice(0,2).join(' · ')||'Radio';
+  div.innerHTML=`<div class="slogo">${s.favicon?`<img src="${s.favicon}" onerror="this.parentNode.textContent='📻'">`:'📻'}</div><div class="sinfo"><div class="sn">${s.name}</div><div class="st">${tags}</div></div><button class="spl" title="Reproducir">▶</button>`;
+  div.querySelector('.spl').onclick=e=>{e.stopPropagation();playSt(s,idx);};
+  div.onclick=()=>playSt(s,idx);return div;
+}
+
+/* ── ROBUST PLAY ── */
+async function playSt(s,idx){
+  /* Fully reset audio */
+  aud.pause();
+  aud.removeAttribute('src');
+  aud.load();
+  playing=false;
+
+  curSt=s;curIdx=idx||0;
+  document.getElementById('pbtn').textContent='⏳';
+  document.getElementById('playerErr').style.display='none';
+  document.getElementById('playerLive').style.display='none';
+  document.getElementById('rRetryBtn').style.display='none';
+
+  /* Update player panel immediately */
+  const lg=document.getElementById('playerLogo');
+  lg.innerHTML=s.favicon?`<img src="${s.favicon}" onerror="this.src=''" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`:'📻';
+  document.getElementById('playerName').textContent=s.name;
+  document.getElementById('playerTags').textContent=(s.tags||'Radio').split(',').filter(Boolean).slice(0,3).join(' · ');
+
+  /* Save to recents */
+  recents=[s,...recents.filter(r=>r.stationuuid!==s.stationuuid)].slice(0,20);
+  localStorage.setItem('aaDRec',JSON.stringify(recents));
+  updateFB();
+
+  /* Try URL — add cache-bust to force fresh connection */
+  const url=s.url_resolved+(s.url_resolved.includes('?')?'&':'?')+'_cb='+Date.now();
+  aud.src=url;
+  aud.load();
+
+  try{
+    await aud.play();
+    playing=true;
+    document.getElementById('pbtn').textContent='⏸';
+    document.getElementById('playerLive').style.display='flex';
+  }catch(e){
+    console.warn('Stream failed:',s.name,e.message);
+    playing=false;
+    document.getElementById('pbtn').textContent='▶';
+    document.getElementById('playerErr').style.display='block';
+    document.getElementById('rRetryBtn').style.display='block';
+  }
+}
+
+function retryPlay(){if(curSt)playSt(curSt,curIdx);}
+function togglePlay(){
+  if(!curSt)return;
+  if(playing){aud.pause();playing=false;document.getElementById('pbtn').textContent='▶';document.getElementById('playerLive').style.display='none';}
+  else{aud.play().then(()=>{playing=true;document.getElementById('pbtn').textContent='⏸';document.getElementById('playerLive').style.display='flex';}).catch(()=>{});}
+}
+function prevStation(){if(curIdx>0)playSt(curList[curIdx-1],curIdx-1);}
+function nextStation(){if(curIdx<curList.length-1)playSt(curList[curIdx+1],curIdx+1);}
+function toggleFav(){if(!curSt)return;const i=favs.findIndex(f=>f.stationuuid===curSt.stationuuid);if(i>=0)favs.splice(i,1);else favs.unshift(curSt);localStorage.setItem('aaDFavs',JSON.stringify(favs));updateFB();}
+function updateFB(){document.getElementById('fbtn').textContent=curSt&&favs.some(f=>f.stationuuid===curSt.stationuuid)?'❤️':'🤍';}
+aud.addEventListener('error',()=>{playing=false;document.getElementById('pbtn').textContent='▶';document.getElementById('playerLive').style.display='none';document.getElementById('playerErr').style.display='block';document.getElementById('rRetryBtn').style.display='block';});
+aud.addEventListener('playing',()=>{playing=true;document.getElementById('pbtn').textContent='⏸';document.getElementById('playerLive').style.display='flex';document.getElementById('playerErr').style.display='none';});
+
+/* ═══════════════ SPEEDOMETER ═══════════════ */
+/* Each brand has a 'style' key → maps to a specific drawing function */
+const BC={
+  amg:    {s:'sport',   lb:'AMG',     mV:320,bg:'#060101',rim:'#bb0000',rimW:.028,arc1:'#cc0000',arc2:'#ff5500',dZr:.68,nC:'#ff2200',nT:'#fff',nm:'#ddd',bT:'AMG PERFORMANCE',ring2:true},
+  ferrari:{s:'italian', lb:'Ferrari', mV:340,bg:'#050000',rim:'#cc0000',rimW:.030,arc1:'#dd0000',arc2:'#ffbb00',dZr:.76,nC:'#ffcc00',nT:'#fff',nm:'#eee',bT:'FERRARI',ring2:false},
+  bmw:    {s:'luxury',  lb:'BMW M',   mV:280,bg:'#010408',rim:'#2255bb',rimW:.022,arc1:'#1144aa',arc2:'#44aaff',dZr:.71,nC:'#eee',   nT:'#ff7700',nm:'#aaa',bT:'BMW M POWER',ring2:true},
+  porsche:{s:'classic', lb:'Porsche', mV:300,bg:'#030303',rim:'#888',   rimW:.018,arc1:'#888',   arc2:'#fff',   dZr:.80,nC:'#eee',   nT:'#cc3300',nm:'#888',bT:'PORSCHE',ring2:false},
+  renault:{s:'modern',  lb:'Renault', mV:240,bg:'#050208',rim:'#dd0000',rimW:.024,arc1:'#cc1100',arc2:'#ff6600',dZr:.75,nC:'#ee2200',nT:'#fff',nm:'#ccc',bT:'RENAULT',ring2:false},
+  vw:     {s:'modern',  lb:'VW',      mV:240,bg:'#01020a',rim:'#1155bb',rimW:.022,arc1:'#1155bb',arc2:'#4488ee',dZr:.79,nC:'#c0d8ff',nT:'#1155bb',nm:'#99b',bT:'VOLKSWAGEN',ring2:false},
+  toyota: {s:'sport',   lb:'Toyota',  mV:220,bg:'#040101',rim:'#991100',rimW:.025,arc1:'#bb1100',arc2:'#ff4400',dZr:.77,nC:'#dd2200',nT:'#fff',nm:'#ccc',bT:'TOYOTA',ring2:false},
+  kia:    {s:'kia',     lb:'Kia',     mV:260,bg:'#010208',rim:'#0066cc',rimW:.022,arc1:'#0077dd',arc2:'#00ccff',dZr:.77,nC:'#00aaff',nT:'#fff',nm:'#9cf',bT:'KIA',ring2:true},
+  audi:   {s:'cockpit', lb:'Audi',    mV:280,bg:'#030202',ac:'#dd0000',bT:'AUDI VIRTUAL COCKPIT'},
+  citroen:{s:'ds',      lb:'Citroën', mV:220,bg:'#060200',ac:'#ff6200',bT:'CITROËN DS'},
+  tesla:  {s:'tesla',   lb:'Tesla',   mV:250,bg:'#000000',ac:'#cc2200',bT:'TESLA'},
+  led:    {s:'led',     lb:'LED',     mV:240,bg:'#000500',ac:'#00ff55',bT:'DIGITAL'},
+};
+const brandKeys=Object.keys(BC);
+let brandIdx=0,brand='amg';
+let unit='kmh',spRun=false,simOn=false;
+let tgtS=0,dS=0,animId=null,maxS=0,sumS=0,cntS=0,tA=0,tB=0,totKm=0,lastC=null;
+let simInt=null,simV=0,simD=1;
+
+function nextBrand(){
+  brandIdx=(brandIdx+1)%brandKeys.length;
+  brand=brandKeys[brandIdx];
+  document.getElementById('brandLabel').textContent=BC[brand].bT;
+  draw(dS);
+}
+function toggleUnit(){unit=unit==='kmh'?'mph':'kmh';const l=unit==='kmh'?'KM/H':'MPH';document.getElementById('ubtn').textContent=l;document.getElementById('unitLabel').textContent=l;draw(dS);updSt();}
+function toggleSim(){simOn=!simOn;document.getElementById('simbtn').classList.toggle('on',simOn);document.getElementById('simbtn').textContent=simOn?'SIM ⏸':'SIM ▶';simOn?startSim():stopSim();}
+function rA(){tA=0;updSt();}function rB(){tB=0;updSt();}
+
+function startSpeedo(){
+  spRun=true;resizeSpeedo();startAnim();
+  const ro=new ResizeObserver(()=>setTimeout(resizeSpeedo,8));
+  const scr=document.getElementById('sSpeedo');if(scr)ro.observe(scr);
+  navigator.geolocation?navigator.geolocation.watchPosition(onGPS,onGPSErr,{enableHighAccuracy:true,maximumAge:800}):onGPSErr();
+}
+function onGPS(p){if(simOn)return;const b=document.getElementById('gpsb');b.className='gpsb ok';b.textContent=`📡 GPS ±${Math.round(p.coords.accuracy)}m`;const spd=Math.max(0,(p.coords.speed||0)*(unit==='kmh'?3.6:2.237));tgtS=spd;procS(spd,p.coords);document.getElementById('navSpd').textContent=Math.round(spd)+(unit==='kmh'?' km/h':' mph');}
+function onGPSErr(){const b=document.getElementById('gpsb');b.className='gpsb';b.textContent='📡 Sin GPS — pulsa SIM ▶ para demo';}
+function startSim(){if(simInt)return;document.getElementById('gpsb').className='gpsb ok';document.getElementById('gpsb').textContent='🎮 Simulación activa';simInt=setInterval(()=>{simD=(simV>=160?-1:simV<=0?1:simD);simV=Math.max(0,Math.min(160,simV+simD*(Math.random()*7)));tgtS=unit==='kmh'?simV:simV*0.621;procS(tgtS,null);},250);}
+function stopSim(){clearInterval(simInt);simInt=null;tgtS=0;onGPSErr();}
+function procS(spd,coords){const raw=unit==='kmh'?spd:spd/0.621;if(raw>maxS)maxS=raw;sumS+=raw;cntS++;if(coords&&lastC){const d=hav(lastC,coords);tA+=d;tB+=d;totKm+=d;}if(coords)lastC=coords;updSt();}
+function updSt(){const u=unit==='kmh'?' km/h':' mph',du=unit==='kmh'?' km':' mi',cv=v=>unit==='mph'?v*0.621:v;document.getElementById('stmax').textContent=Math.round(cv(maxS))+u;document.getElementById('stavg').textContent=(cntS?Math.round(cv(sumS)/cntS):0)+u;document.getElementById('strpm').textContent=(Math.max(.8,dS/40)).toFixed(1)+'k';document.getElementById('stta').textContent=cv(tA).toFixed(2)+du;document.getElementById('sttb').textContent=cv(tB).toFixed(2)+du;document.getElementById('sttot').textContent=cv(totKm).toFixed(2)+du;}
+function hav(a,b){const R=6371,r=Math.PI/180,dLa=(b.latitude-a.latitude)*r,dLo=(b.longitude-a.longitude)*r,x=Math.sin(dLa/2)**2+Math.cos(a.latitude*r)*Math.cos(b.latitude*r)*Math.sin(dLo/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function startAnim(){function loop(){dS+=(tgtS-dS)*0.1;if(Math.abs(tgtS-dS)<0.05)dS=tgtS;draw(dS);animId=requestAnimationFrame(loop);}if(animId)cancelAnimationFrame(animId);loop();}
+
+/* ── CANVAS CORE ── */
+const CAN=document.getElementById('sc'),CTX=CAN.getContext('2d');
+const SA=Math.PI*.75,SW=Math.PI*1.5;
+
+function resizeSpeedo(){
+  const w=window.innerWidth,h=window.innerHeight;
+  CAN.width=w;CAN.height=h;
+  draw(dS);
+}
+
+function draw(spd){
+  if(!CAN.width||CAN.width<50)return;
+  const c=BC[brand];
+  if(c.s==='cockpit')drawCockpit(spd,c);
+  else if(c.s==='ds')drawDs(spd,c);
+  else if(c.s==='tesla')drawTesla(spd,c);
+  else if(c.s==='led')drawLed(spd,c);
+  else drawAna(spd,c);
+}
+
+/* ════ SHARED ANALOG BASE ════ */
+function baseAna(spd,c,W,H){
+  /* Returns {cx,cy,R} and draws face+rim */
+  const cx=W/2,cy=H/2,R=Math.min(cx,cy)*.96;
+  CTX.clearRect(0,0,W,H);
+  /* Face radial gradient */
+  const bg=CTX.createRadialGradient(cx,cy*.75,R*.04,cx,cy,R);
+  bg.addColorStop(0,'#22293a');bg.addColorStop(.5,c.bg);bg.addColorStop(1,'#000');
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.fillStyle=bg;CTX.fill();
+  return {cx,cy,R};
+}
+function rimRing(cx,cy,R,color,w,shadow){
+  if(shadow){CTX.shadowColor=color;CTX.shadowBlur=R*.06;}
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);
+  CTX.strokeStyle=color;CTX.lineWidth=R*w;CTX.stroke();
+  CTX.shadowBlur=0;
+}
+function arcTrack(cx,cy,R,spd,mV,c1,c2,arcR,arcW,dZr){
+  const trackR=R*arcR,trackW=R*arcW;
+  CTX.beginPath();CTX.arc(cx,cy,trackR,SA,SA+SW);CTX.strokeStyle='rgba(255,255,255,.06)';CTX.lineWidth=trackW;CTX.lineCap='round';CTX.stroke();
+  if(dZr){CTX.beginPath();CTX.arc(cx,cy,trackR,SA+SW*dZr,SA+SW);CTX.strokeStyle='rgba(200,10,0,.22)';CTX.lineWidth=trackW;CTX.lineCap='round';CTX.stroke();}
+  const ratio=Math.min(spd/mV,1);
+  if(spd>.2){const g=CTX.createLinearGradient(cx-R*.6,cy+R*.6,cx+R*.6,cy-R*.6);g.addColorStop(0,c1);g.addColorStop(1,c2);CTX.beginPath();CTX.arc(cx,cy,trackR,SA,SA+SW*ratio);CTX.strokeStyle=g;CTX.lineWidth=trackW;CTX.lineCap='round';CTX.stroke();
+    const ta=SA+SW*ratio,tx=cx+Math.cos(ta)*trackR,ty=cy+Math.sin(ta)*trackR;
+    const gl=CTX.createRadialGradient(tx,ty,0,tx,ty,R*.1);gl.addColorStop(0,c2+'cc');gl.addColorStop(1,'transparent');CTX.fillStyle=gl;CTX.beginPath();CTX.arc(tx,ty,R*.1,0,Math.PI*2);CTX.fill();}
+  return ratio;
+}
+function ticks(cx,cy,R,mV,nm,numFont){
+  const tot=mV/10;CTX.textAlign='center';CTX.textBaseline='middle';
+  for(let i=0;i<=tot;i++){
+    const a=SA+(i/tot)*SW,maj=i%2===0;
+    const o=R*.905,len=maj?R*.09:R*.045;
+    CTX.beginPath();CTX.moveTo(cx+Math.cos(a)*(o-len),cy+Math.sin(a)*(o-len));CTX.lineTo(cx+Math.cos(a)*o,cy+Math.sin(a)*o);
+    CTX.strokeStyle=maj?'rgba(255,255,255,.88)':'rgba(255,255,255,.32)';CTX.lineWidth=maj?Math.max(2,R*.01):Math.max(1,R*.005);CTX.stroke();
+    if(maj){const nr=o-len-R*.065;CTX.fillStyle=nm;CTX.font=`700 ${Math.round(R*.072)}px ${numFont||'Rajdhani'}`;CTX.fillText(i*(mV/tot),cx+Math.cos(a)*nr,cy+Math.sin(a)*nr);}
+  }
+}
+function needle(cx,cy,R,spd,mV,nC,nT,arcR){
+  const na=SA+(Math.min(spd,mV)/mV)*SW;
+  const nL=R*arcR,nTl=R*.18,nW=R*.014;
+  const px=Math.sin(na),py=-Math.cos(na);
+  CTX.shadowColor=nC;CTX.shadowBlur=R*.04;
+  CTX.beginPath();CTX.moveTo(cx+Math.cos(na)*nL,cy+Math.sin(na)*nL);
+  CTX.lineTo(cx+px*nW*3,cy+py*nW*3);CTX.lineTo(cx-Math.cos(na)*nTl,cy-Math.sin(na)*nTl);
+  CTX.lineTo(cx-px*nW*3,cy-py*nW*3);CTX.closePath();CTX.fillStyle=nC;CTX.fill();CTX.shadowBlur=0;
+  CTX.beginPath();CTX.arc(cx+Math.cos(na)*nL,cy+Math.sin(na)*nL,R*.016,0,Math.PI*2);CTX.fillStyle=nT;CTX.fill();
+}
+function hub(cx,cy,R,rimC){
+  const hR=R*.072;const hg=CTX.createRadialGradient(cx-hR*.25,cy-hR*.25,hR*.04,cx,cy,hR);
+  hg.addColorStop(0,'#888');hg.addColorStop(.4,'#333');hg.addColorStop(1,'#111');
+  CTX.beginPath();CTX.arc(cx,cy,hR,0,Math.PI*2);CTX.fillStyle=hg;CTX.fill();
+  CTX.strokeStyle=rimC;CTX.lineWidth=R*.014;CTX.stroke();
+  CTX.beginPath();CTX.arc(cx,cy,hR*.3,0,Math.PI*2);CTX.fillStyle=rimC;CTX.fill();
+}
+function centerText(cx,cy,R,spd,c){
+  CTX.textAlign='center';CTX.textBaseline='middle';
+  CTX.fillStyle=c.rim+'cc';CTX.font=`700 ${Math.round(R*.08)}px Rajdhani`;CTX.fillText(c.bT,cx,cy-R*.38);
+  CTX.fillStyle='rgba(255,255,255,.28)';CTX.font=`${Math.round(R*.065)}px Rajdhani`;CTX.fillText((Math.max(.8,spd/40)).toFixed(1)+'k RPM',cx,cy-R*.22);
+  CTX.shadowColor=c.arc2||'#fff';CTX.shadowBlur=R*.06;CTX.fillStyle='#fff';CTX.font=`900 ${Math.round(R*.42)}px Orbitron`;CTX.fillText(Math.round(spd),cx,cy+R*.06);CTX.shadowBlur=0;
+  CTX.fillStyle=c.arc2||c.rim;CTX.font=`700 ${Math.round(R*.09)}px Rajdhani`;CTX.fillText(unit==='kmh'?'KM/H':'MPH',cx,cy+R*.27);
+}
+
+/* ════ STYLE: sport (AMG, Toyota) ════ */
+function drawAna(spd,c){
+  const W=CAN.width,H=CAN.height;
+  const{cx,cy,R}=baseAna(spd,c,W,H);
+  /* Double ring for ring2 brands */
+  if(c.ring2){rimRing(cx,cy,R*.98,'rgba(255,255,255,.08)',R*.008,false);rimRing(cx,cy,R*.92,'rgba(255,255,255,.05)',R*.005,false);}
+  rimRing(cx,cy,R,c.rim,c.rimW||.025,true);
+  arcTrack(cx,cy,R,spd,c.mV,c.arc1,c.arc2,.73,.092,c.dZr);
+  ticks(cx,cy,R,c.mV,c.nm);
+  centerText(cx,cy,R,spd,{...c,arc2:c.arc2});
+  needle(cx,cy,R,spd,c.mV,c.nC,c.nT,.73);
+  hub(cx,cy,R,c.rim);
+}
+
+/* ════ STYLE: italian (Ferrari) — double arc, gold needle ════ */
+function drawItalian(spd,c){
+  const W=CAN.width,H=CAN.height;
+  const{cx,cy,R}=baseAna(spd,c,W,H);
+  /* Outer bezel with notches */
+  rimRing(cx,cy,R,c.rim,c.rimW,true);
+  /* Draw notches every 30° */
+  for(let i=0;i<12;i++){const a=i*Math.PI/6;const ox=cx+Math.cos(a)*R,oy=cy+Math.sin(a)*R;
+    CTX.beginPath();CTX.arc(ox,oy,R*.022,0,Math.PI*2);CTX.fillStyle='rgba(0,0,0,.8)';CTX.fill();}
+  /* Two arc tracks: outer thin red, inner main red-yellow */
+  arcTrack(cx,cy,R,spd,c.mV,c.arc1,'#ff3300',.82,.035,null);
+  arcTrack(cx,cy,R,spd,c.mV,c.arc1,c.arc2,.72,.088,c.dZr);
+  ticks(cx,cy,R,c.mV,c.nm,'Orbitron');
+  /* Ferrari: numbers in Orbitron, gold brand */
+  CTX.textAlign='center';CTX.textBaseline='middle';
+  CTX.fillStyle='#ffcc00cc';CTX.font=`700 ${Math.round(R*.075)}px Rajdhani`;CTX.fillText('FERRARI',cx,cy-R*.38);
+  CTX.fillStyle='rgba(255,255,255,.28)';CTX.font=`${Math.round(R*.063)}px Rajdhani`;CTX.fillText((Math.max(.8,spd/40)).toFixed(1)+'k RPM',cx,cy-R*.22);
+  CTX.shadowColor='#ffcc00';CTX.shadowBlur=R*.06;CTX.fillStyle='#fff';CTX.font=`900 ${Math.round(R*.42)}px Orbitron`;CTX.fillText(Math.round(spd),cx,cy+R*.06);CTX.shadowBlur=0;
+  CTX.fillStyle='#ffcc00';CTX.font=`700 ${Math.round(R*.09)}px Rajdhani`;CTX.fillText(unit==='kmh'?'KM/H':'MPH',cx,cy+R*.27);
+  needle(cx,cy,R,spd,c.mV,c.nC,c.nT,.72);
+  hub(cx,cy,R,'#ffcc00');
+}
+
+/* ════ STYLE: kia — double concentric arcs ════ */
+function drawKia(spd,c){
+  const W=CAN.width,H=CAN.height;
+  const{cx,cy,R}=baseAna(spd,c,W,H);
+  rimRing(cx,cy,R,c.rim,c.rimW,true);
+  rimRing(cx,cy,R*.86,'rgba(0,120,220,.2)',R*.004,false);
+  /* Outer thin arc */
+  arcTrack(cx,cy,R,spd,c.mV,'#0055aa',c.arc2,.84,.03,null);
+  /* Main arc */
+  arcTrack(cx,cy,R,spd,c.mV,c.arc1,c.arc2,.73,.085,c.dZr);
+  /* Kia: ticks have blue fill */
+  const tot=c.mV/10;CTX.textAlign='center';CTX.textBaseline='middle';
+  for(let i=0;i<=tot;i++){const a=SA+(i/tot)*SW,maj=i%2===0;const o=R*.905,len=maj?R*.09:R*.045;
+    CTX.beginPath();CTX.moveTo(cx+Math.cos(a)*(o-len),cy+Math.sin(a)*(o-len));CTX.lineTo(cx+Math.cos(a)*o,cy+Math.sin(a)*o);
+    CTX.strokeStyle=maj?c.arc2:'rgba(0,180,255,.35)';CTX.lineWidth=maj?Math.max(2,R*.012):Math.max(1,R*.005);CTX.stroke();
+    if(maj){const nr=o-len-R*.065;CTX.fillStyle=c.nm;CTX.font=`700 ${Math.round(R*.07)}px Orbitron`;CTX.fillText(i*(c.mV/tot),cx+Math.cos(a)*nr,cy+Math.sin(a)*nr);}
+  }
+  CTX.textAlign='center';CTX.textBaseline='middle';
+  CTX.fillStyle=c.arc2+'cc';CTX.font=`700 ${Math.round(R*.08)}px Rajdhani`;CTX.fillText('KIA',cx,cy-R*.38);
+  CTX.fillStyle='rgba(255,255,255,.28)';CTX.font=`${Math.round(R*.065)}px Rajdhani`;CTX.fillText((Math.max(.8,spd/40)).toFixed(1)+'k RPM',cx,cy-R*.22);
+  CTX.shadowColor=c.arc2;CTX.shadowBlur=R*.06;CTX.fillStyle='#fff';CTX.font=`900 ${Math.round(R*.42)}px Orbitron`;CTX.fillText(Math.round(spd),cx,cy+R*.06);CTX.shadowBlur=0;
+  CTX.fillStyle=c.arc2;CTX.font=`700 ${Math.round(R*.09)}px Rajdhani`;CTX.fillText(unit==='kmh'?'KM/H':'MPH',cx,cy+R*.27);
+  needle(cx,cy,R,spd,c.mV,c.nC,c.nT,.73);
+  hub(cx,cy,R,c.arc2);
+}
+
+/* Dispatch analog styles */
+const drawFns={italian:drawItalian,kia:drawKia};
+function drawAna_dispatch(spd,c){(drawFns[c.s]||drawAna)(spd,c);}
+
+/* ════ DIGITAL: Audi Virtual Cockpit ════ */
+function drawCockpit(spd,c){
+  const W=CAN.width,H=CAN.height,cx=W/2,cy=H/2,R=Math.min(cx,cy)*.96;
+  CTX.clearRect(0,0,W,H);
+  const bg=CTX.createRadialGradient(cx,cy,0,cx,cy,R);bg.addColorStop(0,'#121520');bg.addColorStop(1,c.bg);
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.fillStyle=bg;CTX.fill();
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.strokeStyle='rgba(200,0,0,.5)';CTX.lineWidth=R*.016;CTX.stroke();
+  /* 60 segments — Audi cockpit style */
+  const segs=60,arcR=R*.80,arcW=R*.06;
+  const ratio=Math.min(spd/c.mV,1);
+  for(let i=0;i<segs;i++){const f=i/segs,f2=(i+.88)/segs,lit=f<ratio;
+    const a1=SA+f*SW,a2=SA+f2*SW;
+    CTX.beginPath();CTX.arc(cx,cy,arcR,a1,a2);
+    if(lit){CTX.shadowColor=c.ac;CTX.shadowBlur=R*.03;}else CTX.shadowBlur=0;
+    CTX.strokeStyle=lit?c.ac:'rgba(255,255,255,.05)';CTX.lineWidth=arcW;CTX.lineCap='butt';CTX.stroke();}
+  CTX.shadowBlur=0;
+  /* Outer thin accent arc */
+  const racc=R*.92,raccW=R*.016;
+  CTX.beginPath();CTX.arc(cx,cy,racc,SA,SA+SW*ratio);CTX.strokeStyle=c.ac+'55';CTX.lineWidth=raccW;CTX.lineCap='round';CTX.stroke();
+  /* Scale numbers */
+  const tot=c.mV/20;CTX.textAlign='center';CTX.textBaseline='middle';
+  for(let i=0;i<=tot;i++){const a=SA+(i/tot)*SW;CTX.fillStyle=c.ac+'88';CTX.font=`700 ${Math.round(R*.065)}px Rajdhani`;CTX.fillText(i*(c.mV/tot),cx+Math.cos(a)*(arcR-arcW/2-R*.06),cy+Math.sin(a)*(arcR-arcW/2-R*.06));}
+  /* Brand + speed */
+  CTX.textAlign='center';CTX.textBaseline='middle';
+  CTX.fillStyle=c.ac+'dd';CTX.font=`700 ${Math.round(R*.08)}px Rajdhani`;CTX.fillText(c.bT,cx,cy-R*.38);
+  CTX.shadowColor=c.ac;CTX.shadowBlur=R*.07;CTX.fillStyle='#fff';CTX.font=`900 ${Math.round(R*.44)}px Orbitron`;CTX.fillText(Math.round(spd),cx,cy+R*.05);CTX.shadowBlur=0;
+  CTX.fillStyle=c.ac;CTX.font=`700 ${Math.round(R*.09)}px Rajdhani`;CTX.fillText(unit==='kmh'?'KM/H':'MPH',cx,cy+R*.26);
+  const bw=R*1.05,bh=Math.max(3,R*.022),bx=cx-bw/2,by=cy+R*.5;
+  CTX.fillStyle='rgba(255,255,255,.06)';CTX.fillRect(bx,by,bw,bh);CTX.fillStyle=c.ac;CTX.fillRect(bx,by,bw*ratio,bh);
+  CTX.fillStyle='rgba(255,255,255,.38)';CTX.font=`${Math.round(R*.06)}px Rajdhani`;CTX.textAlign='center';CTX.fillText((Math.max(.8,dS/40)).toFixed(1)+'k RPM',cx,by+bh+R*.038);
+}
+
+/* ════ DIGITAL: Citroën DS ════ */
+function drawDs(spd,c){
+  const W=CAN.width,H=CAN.height,cx=W/2,cy=H/2,R=Math.min(cx,cy)*.96;
+  CTX.clearRect(0,0,W,H);
+  const bg=CTX.createRadialGradient(cx,cy*.7,R*.03,cx,cy,R);bg.addColorStop(0,'#1a0e00');bg.addColorStop(1,c.bg);
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.fillStyle=bg;CTX.fill();
+  /* Dashed outer ring */
+  const dashR=R*.97;CTX.setLineDash([R*.04,R*.02]);CTX.beginPath();CTX.arc(cx,cy,dashR,0,Math.PI*2);CTX.strokeStyle=c.ac+'66';CTX.lineWidth=R*.014;CTX.stroke();CTX.setLineDash([]);
+  /* Main thick arc */
+  const arcR=R*.76,arcW=R*.1,ratio=Math.min(spd/c.mV,1);
+  CTX.beginPath();CTX.arc(cx,cy,arcR,SA,SA+SW);CTX.strokeStyle='rgba(255,255,255,.06)';CTX.lineWidth=arcW;CTX.lineCap='round';CTX.stroke();
+  if(spd>.2){const g=CTX.createLinearGradient(0,H,W,0);g.addColorStop(0,c.ac+'aa');g.addColorStop(1,c.ac);CTX.beginPath();CTX.arc(cx,cy,arcR,SA,SA+SW*ratio);CTX.strokeStyle=g;CTX.lineWidth=arcW;CTX.lineCap='round';CTX.shadowColor=c.ac;CTX.shadowBlur=R*.04;CTX.stroke();CTX.shadowBlur=0;}
+  /* Ticks */
+  const tot=c.mV/10;CTX.textAlign='center';CTX.textBaseline='middle';
+  for(let i=0;i<=tot;i++){const a=SA+(i/tot)*SW,maj=i%2===0;const o=R*.905,len=maj?R*.07:R*.04;
+    CTX.beginPath();CTX.moveTo(cx+Math.cos(a)*(o-len),cy+Math.sin(a)*(o-len));CTX.lineTo(cx+Math.cos(a)*o,cy+Math.sin(a)*o);
+    CTX.strokeStyle=maj?c.ac+'cc':'rgba(255,255,255,.2)';CTX.lineWidth=maj?R*.012:R*.005;CTX.stroke();
+    if(maj){CTX.fillStyle=c.ac+'99';CTX.font=`${Math.round(R*.065)}px Rajdhani`;CTX.fillText(i*(c.mV/tot),cx+Math.cos(a)*(o-len-R*.06),cy+Math.sin(a)*(o-len-R*.06));}}
+  CTX.textAlign='center';CTX.textBaseline='middle';
+  CTX.fillStyle=c.ac+'dd';CTX.font=`700 ${Math.round(R*.08)}px Rajdhani`;CTX.fillText(c.bT,cx,cy-R*.38);
+  CTX.shadowColor=c.ac;CTX.shadowBlur=R*.07;CTX.fillStyle='#fff';CTX.font=`900 ${Math.round(R*.44)}px Orbitron`;CTX.fillText(Math.round(spd),cx,cy+R*.05);CTX.shadowBlur=0;
+  CTX.fillStyle=c.ac;CTX.font=`700 ${Math.round(R*.09)}px Rajdhani`;CTX.fillText(unit==='kmh'?'KM/H':'MPH',cx,cy+R*.26);
+}
+
+/* ════ DIGITAL: Tesla minimal ════ */
+function drawTesla(spd,c){
+  const W=CAN.width,H=CAN.height,cx=W/2,cy=H/2,R=Math.min(cx,cy)*.96;
+  CTX.clearRect(0,0,W,H);
+  /* Pure black */
+  CTX.fillStyle='#000';CTX.fillRect(0,0,W,H);
+  /* Thin progress arc — left and right sides */
+  const ratio=Math.min(spd/c.mV,1);
+  /* Vertical bar indicators on sides */
+  const barH=R*1.4,barW=R*.035,barX1=cx-R*.88,barX2=cx+R*.88,barYtop=cy-barH/2;
+  CTX.fillStyle='rgba(255,255,255,.06)';CTX.fillRect(barX1,barYtop,barW,barH);CTX.fillRect(barX2,barYtop,barW,barH);
+  /* Fill bars */
+  const fillH=barH*ratio;
+  const g1=CTX.createLinearGradient(0,barYtop+barH,0,barYtop);g1.addColorStop(0,c.ac);g1.addColorStop(1,c.ac+'66');
+  CTX.fillStyle=g1;CTX.fillRect(barX1,barYtop+barH-fillH,barW,fillH);CTX.fillRect(barX2,barYtop+barH-fillH,barW,fillH);
+  /* Thin outer circle — just a suggestion */
+  CTX.beginPath();CTX.arc(cx,cy,R*.85,SA,SA+SW);CTX.strokeStyle='rgba(255,255,255,.05)';CTX.lineWidth=R*.008;CTX.stroke();
+  if(spd>.2){CTX.beginPath();CTX.arc(cx,cy,R*.85,SA,SA+SW*ratio);CTX.strokeStyle=c.ac+'44';CTX.lineWidth=R*.008;CTX.stroke();}
+  /* Brand and speed */
+  CTX.textAlign='center';CTX.textBaseline='middle';
+  CTX.fillStyle='rgba(255,255,255,.3)';CTX.font=`400 ${Math.round(R*.07)}px Rajdhani`;CTX.fillText('TESLA',cx,cy-R*.42);
+  CTX.shadowColor=c.ac;CTX.shadowBlur=R*.05;CTX.fillStyle='#fff';CTX.font=`900 ${Math.round(R*.54)}px Orbitron`;CTX.fillText(Math.round(spd),cx,cy+R*.04);CTX.shadowBlur=0;
+  CTX.fillStyle=c.ac;CTX.font=`700 ${Math.round(R*.09)}px Rajdhani`;CTX.fillText(unit==='kmh'?'KM/H':'MPH',cx,cy+R*.3);
+  /* Speed marks */
+  [0,50,100,150,200,250].filter(v=>v<=c.mV).forEach(v=>{const y=barYtop+barH-barH*(v/c.mV);CTX.fillStyle='rgba(255,255,255,.2)';CTX.font=`${Math.round(R*.055)}px Rajdhani`;CTX.textAlign='right';CTX.fillText(v,barX1-R*.02,y);CTX.textAlign='left';CTX.fillText(v,barX2+barW+R*.02,y);});
+}
+
+/* ════ DIGITAL: LED retro matrix ════ */
+function drawLed(spd,c){
+  const W=CAN.width,H=CAN.height,cx=W/2,cy=H/2,R=Math.min(cx,cy)*.96;
+  CTX.clearRect(0,0,W,H);
+  CTX.fillStyle='#000805';CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.fill();
+  /* Draw dot matrix around the arc */
+  const dots=80,dotR=R*.88,dotSize=R*.016,ratio=Math.min(spd/c.mV,1);
+  for(let i=0;i<dots;i++){const a=SA+(i/dots)*SW,lit=i<dots*ratio;const dx=cx+Math.cos(a)*dotR,dy=cy+Math.sin(a)*dotR;
+    if(lit){CTX.shadowColor=c.ac;CTX.shadowBlur=R*.04;}else CTX.shadowBlur=0;
+    CTX.beginPath();CTX.arc(dx,dy,dotSize,0,Math.PI*2);CTX.fillStyle=lit?c.ac:'rgba(0,80,20,.4)';CTX.fill();}
+  CTX.shadowBlur=0;
+  /* Second inner ring of dots */
+  const dots2=40,dotR2=R*.75;
+  for(let i=0;i<dots2;i++){const a=SA+(i/dots2)*SW,lit=i<dots2*ratio;const dx=cx+Math.cos(a)*dotR2,dy=cy+Math.sin(a)*dotR2;
+    CTX.beginPath();CTX.arc(dx,dy,dotSize*.7,0,Math.PI*2);CTX.fillStyle=lit?c.ac+'88':'rgba(0,60,15,.35)';CTX.fill();}
+  /* Scale labels */
+  const tot=c.mV/20;CTX.textAlign='center';CTX.textBaseline='middle';
+  for(let i=0;i<=tot;i++){const a=SA+(i/tot)*SW;CTX.fillStyle=c.ac+'77';CTX.font=`700 ${Math.round(R*.065)}px Orbitron`;CTX.fillText(i*(c.mV/tot),cx+Math.cos(a)*(R*.62),cy+Math.sin(a)*(R*.62));}
+  /* Big number with LED scan-line effect */
+  CTX.textAlign='center';CTX.textBaseline='middle';
+  CTX.fillStyle=c.ac+'44';CTX.font=`400 ${Math.round(R*.075)}px Orbitron`;CTX.fillText('DIGITAL',cx,cy-R*.4);
+  CTX.shadowColor=c.ac;CTX.shadowBlur=R*.08;CTX.fillStyle=c.ac;CTX.font=`900 ${Math.round(R*.44)}px Orbitron`;CTX.fillText(Math.round(spd),cx,cy+R*.04);CTX.shadowBlur=0;
+  CTX.fillStyle=c.ac+'cc';CTX.font=`700 ${Math.round(R*.09)}px Orbitron`;CTX.fillText(unit==='kmh'?'KM/H':'MPH',cx,cy+R*.26);
+  /* Horizontal scan lines overlay */
+  for(let y=Math.round(cy-R*.5);y<cy+R*.5;y+=Math.round(R*.04)){CTX.fillStyle='rgba(0,0,0,.18)';CTX.fillRect(cx-R*.35,y,R*.7,Math.round(R*.018));}
+}
+
+/* Dispatch all draw functions */
+const drawTable={sport:drawAna,luxury:drawAna,modern:drawAna,classic:drawAna,italian:drawItalian,kia:drawKia,cockpit:drawCockpit,ds:drawDs,tesla:drawTesla,led:drawLed};
+function draw(spd){if(!CAN.width||CAN.width<50)return;const c=BC[brand];(drawTable[c.s]||drawAna)(spd,c);}
+
+
+
+/* ═══════════════ MAP ═══════════════ */
+let mapInit=false,leafMap=null,uMark=null,routeL=null,destM=null;
+
+function initLeaflet(la,lo){
+  leafMap=L.map('mapEl',{zoomControl:true,attributionControl:true}).setView([la,lo],15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://openstreetmap.org">OSM</a>'}).addTo(leafMap);
+  /* Place user marker at actual position */
+  const ic=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#1d6aeb;border:3px solid #fff;box-shadow:0 0 12px #1d6aeb99"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+  uMark=L.marker([la,lo],{icon:ic}).addTo(leafMap);
+  document.getElementById('navPos').textContent=la.toFixed(4)+','+lo.toFixed(4);
+}
+
+function startMapWatch(){
+  navigator.geolocation.watchPosition(pos=>{
+    const{latitude:la,longitude:lo,speed:sp}=pos.coords;
+    document.getElementById('navPos').textContent=la.toFixed(4)+','+lo.toFixed(4);
+    document.getElementById('navSpd').textContent=(sp?Math.round(sp*(unit==='kmh'?3.6:2.237)):0)+(unit==='kmh'?' km/h':' mph');
+    if(uMark)uMark.setLatLng([la,lo]);
+  },{enableHighAccuracy:true,maximumAge:1000});
+}
+
+function initMap(){
+  mapInit=true;
+  /* Show loading message in map area */
+  document.getElementById('nvmsg').style.display='block';
+  document.getElementById('nvmsg').textContent='📡 Buscando tu posición GPS…';
+  if(navigator.geolocation){
+    /* Try to get actual position FIRST (up to 8s) */
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        document.getElementById('nvmsg').style.display='none';
+        initLeaflet(pos.coords.latitude,pos.coords.longitude);
+        startMapWatch();
+      },
+      ()=>{
+        /* GPS failed → default Spain center, show notice */
+        document.getElementById('nvmsg').textContent='⚠️ GPS no disponible — mapa centrado en España. Activa el GPS para tu posición real.';
+        initLeaflet(40.4168,-3.7038);
+      },
+      {enableHighAccuracy:true,timeout:8000,maximumAge:0}
+    );
+  }else{
+    document.getElementById('nvmsg').textContent='⚠️ Geolocalización no soportada en este navegador.';
+    initLeaflet(40.4168,-3.7038);
+  }
+}
+async function doRoute(){
+  const q=document.getElementById('navQ').value.trim();if(!q)return;
+  const msg=document.getElementById('nvmsg');msg.style.display='block';msg.textContent='🔍 Buscando destino…';
+  try{
+    const gd=await(await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`)).json();
+    if(!gd||!gd.length){msg.textContent='❌ Destino no encontrado. Prueba con otra dirección.';return;}
+    const dest={la:+gd[0].lat,lo:+gd[0].lon,name:gd[0].display_name};
+    if(destM)leafMap.removeLayer(destM);
+    const di=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#ef4444;border:3px solid #fff;box-shadow:0 0 10px #ef444488"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+    destM=L.marker([dest.la,dest.lo],{icon:di}).addTo(leafMap).bindPopup(`📍 ${dest.name.substring(0,60)}`).openPopup();
+    msg.textContent='🗺️ Calculando ruta…';
+    const from=uMark?uMark.getLatLng():leafMap.getCenter();
+    const rd=await(await fetch(`https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${dest.lo},${dest.la}?overview=full&geometries=geojson`)).json();
+    if(rd.routes?.length){const rt=rd.routes[0],km=(rt.distance/1000).toFixed(1),mins=Math.round(rt.duration/60);document.getElementById('navDist').textContent=km+' km';document.getElementById('navTime').textContent=mins<60?mins+'min':Math.floor(mins/60)+'h '+(mins%60)+'m';if(routeL)leafMap.removeLayer(routeL);routeL=L.geoJSON(rt.geometry,{style:{color:'#1d6aeb',weight:5,opacity:.85}}).addTo(leafMap);leafMap.fitBounds(routeL.getBounds(),{padding:[30,30]});msg.textContent=`✅ ${km} km · ${document.getElementById('navTime').textContent}`;}else msg.textContent='❌ No se encontró ruta.';
+  }catch(e){msg.textContent='❌ Error de conexión.';}
+}
+function openExt(app){const q=document.getElementById('navQ').value.trim();window.open(app==='gmaps'?`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q||'')}`:`https://waze.com/ul?q=${encodeURIComponent(q||'')}&navigate=yes`);}
+
+/* ═══════════════ SETTINGS ═══════════════ */
+const THEMES=[{n:'Azul',bg:'#070b12',card:'#14223a',acc:'#1d6aeb'},{n:'Rojo Sport',bg:'#0f0505',card:'#2a1010',acc:'#ef4444'},{n:'Verde',bg:'#030f08',card:'#0a2414',acc:'#22c55e'},{n:'Violeta',bg:'#08050f',card:'#1a1030',acc:'#8b5cf6'}];
+let thIdx=0;
+function cycleTheme(){thIdx=(thIdx+1)%THEMES.length;const t=THEMES[thIdx];const r=document.documentElement.style;r.setProperty('--bg',t.bg);r.setProperty('--card',t.card);r.setProperty('--acc',t.acc);document.getElementById('thLabel').textContent=t.n;}
+</script>
+</body>
+</html>
