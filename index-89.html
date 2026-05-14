@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AA Drive — Android Auto</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070b12;
+  --surface: #0e1826;
+  --card: #14223a;
+  --header: #0a1628;
+  --accent: #1d6aeb;
+  --accent2: #ef4444;
+  --text: #eef3ff;
+  --text-dim: #7b91b8;
+  --border: #1b3560;
+  --green: #22c55e;
+  --orange: #f97316;
+  --purple: #8b5cf6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  height: 100dvh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ───── SCREENS ───── */
+.screen { display: none; flex-direction: column; height: 100dvh; overflow: hidden; }
+.screen.active { display: flex; }
+
+/* ───── HEADER ───── */
+.aa-header {
+  background: linear-gradient(180deg, #0a1a38 0%, #0e1826 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  min-height: 58px;
+}
+.btn-back {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .18s;
+  flex-shrink: 0;
+}
+.btn-back:hover { background: rgba(255,255,255,0.14); }
+.header-title { font-size: 20px; font-weight: 700; flex: 1; }
+.header-actions { display: flex; gap: 8px; }
+.hbtn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all .18s;
+  white-space: nowrap;
+}
+.hbtn:hover { background: rgba(255,255,255,0.14); }
+.hbtn.on { background: var(--accent); border-color: var(--accent); }
+
+/* ───── HOME ───── */
+#screenHome { position: relative; background: var(--bg); }
+.home-wallpaper {
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 70%, rgba(239,68,68,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 30%, rgba(29,106,235,.14) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(14,34,70,.8) 0%, transparent 100%),
+    linear-gradient(160deg, #07090f 0%, #0e1826 100%);
+}
+/* Animated speed lines */
+.home-wallpaper::after {
+  content:'';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg,
+    transparent 0%, transparent 48%,
+    rgba(255,255,255,.012) 49%, rgba(255,255,255,.012) 51%,
+    transparent 52%);
+  animation: speedLines 4s linear infinite;
+}
+@keyframes speedLines { from{background-position:0 0} to{background-position:200px 0} }
+
+.home-bar {
+  position: relative; z-index: 1;
+  background: linear-gradient(180deg, rgba(10,22,56,.9) 0%, transparent 100%);
+  padding: 14px 20px 10px;
+  display: flex; align-items: center; gap: 14px;
+}
+.mic-btn {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.15);
+  color: var(--text); width: 46px; height: 46px;
+  border-radius: 50%; cursor: pointer; font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; flex-shrink: 0;
+}
+.mic-btn:hover { background: rgba(29,106,235,.4); }
+.home-center { flex: 1; text-align: center; }
+.home-app-name {
+  font-size: 19px; font-weight: 700; letter-spacing: .5px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.home-app-name span { font-size: 22px; }
+.weather-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 24px; padding: 7px 14px; font-size: 14px;
+  white-space: nowrap;
+}
+.home-clock {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px; font-weight: 700; white-space: nowrap;
+}
+.home-content {
+  position: relative; z-index: 1;
+  flex: 1; overflow-y: auto; padding: 14px 14px 20px;
+}
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.app-tile {
+  background: rgba(14,24,46,.8);
+  border: 1px solid rgba(29,106,235,.2);
+  border-radius: 18px;
+  padding: 22px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer; transition: all .18s;
+  backdrop-filter: blur(12px);
+  min-height: 110px; justify-content: center;
+}
+.app-tile:hover, .app-tile:active {
+  background: rgba(29,106,235,.22);
+  border-color: var(--accent);
+  transform: scale(.96);
+}
+.tile-icon { font-size: 36px; line-height: 1; }
+.tile-name { font-size: 15px; font-weight: 600; text-align: center; color: var(--text); }
+
+/* ───── SCROLL AREA ───── */
+.screen-body { flex: 1; overflow-y: auto; padding: 14px; }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ───── SECTION TITLE ───── */
+.stitle {
+  font-size: 12px; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 2px;
+  margin: 14px 0 9px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* ───── RADIO ───── */
+.search-bar {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 15px;
+  display: flex; align-items: center; gap: 9px;
+  margin-bottom: 14px;
+}
+.search-input {
+  background: none; border: none;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px; flex: 1; outline: none;
+}
+.search-input::placeholder { color: var(--text-dim); }
+
+.radio-cats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 14px;
+}
+.rcat {
+  border-radius: 14px; padding: 18px 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; font-size: 17px; font-weight: 700;
+  transition: transform .18s; border: none;
+}
+.rcat:active { transform: scale(.95); }
+.rcat .ci { font-size: 30px; }
+.rcat.paises  { background: linear-gradient(135deg,#1a3fa8,#2563eb); }
+.rcat.favs    { background: linear-gradient(135deg,#b84a0a,#ea580c); }
+.rcat.recents { background: linear-gradient(135deg,#6b21a8,#9333ea); }
+.rcat.top     { background: linear-gradient(135deg,#065f46,#059669); }
+
+.st-list { display: flex; flex-direction: column; gap: 7px; }
+.st-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: all .18s;
+}
+.st-item:hover { border-color: var(--accent); background: rgba(29,106,235,.1); }
+.st-item.playing { border-color: var(--accent); background: rgba(29,106,235,.16); }
+.st-logo {
+  width: 46px; height: 46px;
+  border-radius: 10px;
+  background: linear-gradient(135deg,var(--accent),#1e3fa8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; overflow: hidden; flex-shrink: 0;
+}
+.st-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+.st-info { flex: 1; min-width: 0; }
+.st-name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-tags { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+.st-play {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--accent); border: none; color: white;
+  font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: transform .15s;
+}
+.st-play:active { transform: scale(.9); }
+
+/* mini player */
+.miniplayer {
+  background: linear-gradient(135deg, #0a1628, #14223a);
+  border-top: 1px solid var(--border);
+  padding: 10px 14px;
+  display: none; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.miniplayer.visible { display: flex; }
+.mp-info { flex: 1; min-width: 0; }
+.mp-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-live { font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 5px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: blink 1.1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+.mp-controls { display: flex; gap: 10px; align-items: center; }
+.cbtn {
+  background: rgba(255,255,255,.1); border: none; color: var(--text);
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  font-size: 17px; display: flex; align-items: center; justify-content: center;
+  transition: background .18s;
+}
+.cbtn:hover { background: rgba(255,255,255,.2); }
+.cbtn.main { background: var(--accent); width: 46px; height: 46px; font-size: 20px; }
+.cbtn.fav  { background: none; font-size: 21px; }
+
+/* loading */
+.loading {
+  display: flex; align-items: center; justify-content: center;
+  padding: 36px 20px; color: var(--text-dim);
+  flex-direction: column; gap: 12px; text-align: center;
+}
+.spin {
+  width: 34px; height: 34px;
+  border: 3px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spinning .8s linear infinite;
+}
+@keyframes spinning { to { transform:rotate(360deg); } }
+
+/* ───── SPEEDOMETER ───── */
+.speedo-wrap {
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 14px 14px 20px;
+}
+.brand-row {
+  display: flex; gap: 7px; flex-wrap: wrap;
+  justify-content: center; margin-bottom: 14px;
+}
+.bbtn {
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--text); padding: 7px 15px; border-radius: 8px;
+  cursor: pointer; font-family: 'Rajdhani',sans-serif;
+  font-size: 13px; font-weight: 700; transition: all .18s;
+}
+.bbtn.on { background: var(--accent); border-color: var(--accent); }
+
+.gps-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; padding: 6px 13px; border-radius: 20px;
+  background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
+  color: #f87171; margin-bottom: 12px; transition: all .3s;
+}
+.gps-badge.ok {
+  background: rgba(34,197,94,.1); border-color: rgba(34,197,94,.3); color: var(--green);
+}
+#speedoCanvas {
+  max-width: 300px; width: 100%;
+  filter: drop-shadow(0 0 20px rgba(29,106,235,.3));
+}
+.stat-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 9px; width: 100%; max-width: 560px; margin-top: 16px;
+}
+.stat-c {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px; text-align: center;
+}
+.stat-l { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.stat-v { font-family: 'Orbitron',monospace; font-size: 17px; font-weight: 700; }
+
+/* ───── NAVIGATION ───── */
+.nav-list { display: flex; flex-direction: column; gap: 13px; padding: 18px 14px; }
+.nav-row {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px;
+  cursor: pointer; transition: all .18s;
+  text-decoration: none; color: var(--text);
+}
+.nav-row:hover { border-color: var(--accent); background: rgba(29,106,235,.1); }
+.nav-ico { font-size: 44px; flex-shrink: 0; }
+.nav-inf { flex: 1; }
+.nav-n { font-size: 20px; font-weight: 700; }
+.nav-d { font-size: 13px; color: var(--text-dim); margin-top: 3px; }
+.nav-arr { color: var(--text-dim); font-size: 22px; }
+
+/* ───── SETTINGS ───── */
+.set-list { display: flex; flex-direction: column; gap: 8px; }
+.set-row {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; transition: all .18s;
+}
+.set-row:hover { border-color: var(--accent); }
+.set-ico { font-size: 26px; color: var(--accent); flex-shrink: 0; }
+.set-inf { flex: 1; }
+.set-t { font-size: 17px; font-weight: 700; }
+.set-s { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+.set-arr { color: var(--text-dim); font-size: 20px; }
+
+/* ───── MUSIC / PODCAST ───── */
+.app-links { display: flex; flex-direction: column; gap: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ HOME ═══════════════════════ -->
+<div id="screenHome" class="screen active">
+  <div class="home-wallpaper"></div>
+  <div class="home-bar">
+    <button class="mic-btn" title="Asistente de voz">🎙️</button>
+    <div class="home-center">
+      <div class="home-app-name"><span>🚗</span>AA Drive</div>
+    </div>
+    <div class="weather-chip">⛅ <span id="wTemp">--</span>°C <span id="wCity">España</span></div>
+    <div class="home-clock" id="homeClock">--:--</div>
+  </div>
+  <div class="home-content">
+    <div class="app-grid">
+      <div class="app-tile" onclick="go('screenRadio')">
+        <div class="tile-icon">📻</div>
+        <div class="tile-name">Radio</div>
+      </div>
+      <div class="app-tile" onclick="go('screenSpeedo')">
+        <div class="tile-icon">🏎️</div>
+        <div class="tile-name">Velocímetro</div>
+      </div>
+      <div class="app-tile" onclick="go('screenNav')">
+        <div class="tile-icon">🗺️</div>
+        <div class="tile-name">Navegación</div>
+      </div>
+      <div class="app-tile" onclick="go('screenPodcast')">
+        <div class="tile-icon">🎙️</div>
+        <div class="tile-name">Podcast</div>
+      </div>
+      <div class="app-tile" onclick="go('screenMusic')">
+        <div class="tile-icon">🎵</div>
+        <div class="tile-name">Música</div>
+      </div>
+      <div class="app-tile" onclick="go('screenSettings')">
+        <div class="tile-icon">⚙️</div>
+        <div class="tile-name">Ajustes</div>
+      </div>
+    </div>
+    <div class="stitle" style="margin-top:18px">⚡ Android Auto Compatible</div>
+    <div style="color:var(--text-dim);font-size:13px;line-height:1.6">
+      Radio ✓ &nbsp;·&nbsp; Velocímetro GPS ✓ &nbsp;·&nbsp; Navegación ✓ &nbsp;·&nbsp; Podcasts ✓ &nbsp;·&nbsp; Música ✓<br>
+      <span style="color:var(--accent2)">✗ YouTube · IPTV · Vídeo — No permitido en Android Auto</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ RADIO ═══════════════════════ -->
+<div id="screenRadio" class="screen">
+  <div class="aa-header">
+    <button class="btn-back" onclick="go('screenHome')">←</button>
+    <div class="header-title">📻 Radio</div>
+    <div class="header-actions">
+      <button class="hbtn" onclick="loadCountries()">🌍 Países</button>
+    </div>
+  </div>
+
+  <div class="screen-body" id="radioBody">
+    <div class="search-bar">
+      <span style="color:var(--text-dim);font-size:18px">🔍</span>
+      <input class="search-input" id="radioSearch" placeholder="Buscar emisoras…" oninput="onSearch(this.value)">
+    </div>
+
+    <!-- HOME view -->
+    <div id="rHome">
+      <div class="radio-cats">
+        <button class="rcat paises" onclick="loadByCountry('ES','España 🇪🇸')">
+          <div class="ci">🌍</div>Países
+        </button>
+        <button class="rcat favs" onclick="showFavs()">
+          <div class="ci">⭐</div>Favoritos
+        </button>
+        <button class="rcat recents" onclick="showRecents()">
+          <div class="ci">🕐</div>Recientes
+        </button>
+        <button class="rcat top" onclick="loadTop()">
+          <div class="ci">🔥</div>Top Global
+        </button>
+      </div>
+      <div class="stitle">📍 España — Emisoras populares</div>
+      <div class="st-list" id="regionalList">
+        <div class="loading"><div class="spin"></div><span>Conectando…</span></div>
+      </div>
+    </div>
+
+    <!-- STATION LIST view -->
+    <div id="rList" style="display:none">
+      <div class="stitle" id="rListTitle"></div>
+      <div class="st-list" id="rItems"></div>
+    </div>
+
+    <!-- COUNTRY LIST view -->
+    <div id="rCountries" style="display:none">
+      <div class="stitle">Selecciona un país</div>
+      <div class="st-list" id="countryItems"></div>
+    </div>
+  </div>
+
+  <!-- Mini player -->
+  <div class="miniplayer" id="miniPlayer">
+    <div id="mpLogo" style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#1a3fa8);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📻</div>
+    <div class="mp-info">
+      <div class="mp-name" id="mpName">Sin emisora</div>
+      <div class="mp-live"><div class="dot"></div> EN DIRECTO</div>
+    </div>
+    <div class="mp-controls">
+      <button class="cbtn main" id="playBtn" onclick="togglePlay()">⏸</button>
+      <button class="cbtn fav" id="favBtn" onclick="toggleFav()">🤍</button>
+    </div>
+  </div>
+  <audio id="audioEl" preload="none"></audio>
+</div>
+
+<!-- ═══════════════════════ SPEEDOMETER ═══════════════════════ -->
+<div id="screenSpeedo" class="screen">
+  <div class="aa-header">
+    <button class="btn-back" onclick="go('screenHome')">←</button>
+    <div class="header-title">Velocímetro</div>
+    <div class="header-actions">
+      <button class="hbtn on" id="unitBtn" onclick="toggleUnit()">KM/H</button>
+      <button class="hbtn" onclick="resetA()">Reset A</button>
+      <button class="hbtn" onclick="resetB()">Reset B</button>
+    </div>
+  </div>
+  <div class="speedo-wrap">
+    <div class="brand-row">
+      <button class="bbtn on" data-b="amg"     onclick="setBrand(this)">AMG</button>
+      <button class="bbtn"    data-b="bmw"     onclick="setBrand(this)">BMW M</button>
+      <button class="bbtn"    data-b="audi"    onclick="setBrand(this)">Audi</button>
+      <button class="bbtn"    data-b="ferrari" onclick="setBrand(this)">Ferrari</button>
+      <button class="bbtn"    data-b="default" onclick="setBrand(this)">Digital</button>
+    </div>
+    <div class="gps-badge" id="gpsBadge">📡 Solicitando GPS…</div>
+    <canvas id="speedoCanvas" width="300" height="300"></canvas>
+    <div class="stat-grid">
+      <div class="stat-c"><div class="stat-l">Vel. Máx</div><div class="stat-v" id="sMax">0</div></div>
+      <div class="stat-c"><div class="stat-l">Vel. Media</div><div class="stat-v" id="sAvg">0</div></div>
+      <div class="stat-c"><div class="stat-l">RPM (sim)</div><div class="stat-v" id="sRpm">0.0k</div></div>
+      <div class="stat-c"><div class="stat-l">Trip A</div><div class="stat-v" id="sTripA">0.0</div></div>
+      <div class="stat-c"><div class="stat-l">Trip B</div><div class="stat-v" id="sTripB">0.0</div></div>
+      <div class="stat-c"><div class="stat-l">Total</div><div class="stat-v" id="sTotal">0.0</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ NAVIGATION ═══════════════════════ -->
+<div id="screenNav" class="screen">
+  <div class="aa-header">
+    <button class="btn-back" onclick="go('screenHome')">←</button>
+    <div class="header-title">🗺️ Navegación</div>
+  </div>
+  <div class="screen-body">
+    <div class="stitle">Elige tu app de navegación</div>
+    <div class="nav-list">
+      <a class="nav-row" href="https://maps.google.com" target="_blank">
+        <div class="nav-ico">🗺️</div>
+        <div class="nav-inf"><div class="nav-n">Google Maps</div><div class="nav-d">Navegación con tráfico en tiempo real</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+      <a class="nav-row" href="https://waze.com" target="_blank">
+        <div class="nav-ico">🚦</div>
+        <div class="nav-inf"><div class="nav-n">Waze</div><div class="nav-d">Alertas de tráfico, radares y accidentes</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+      <a class="nav-row" href="https://maps.here.com" target="_blank">
+        <div class="nav-ico">📍</div>
+        <div class="nav-inf"><div class="nav-n">HERE WeGo</div><div class="nav-d">Mapas sin conexión disponibles</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+      <a class="nav-row" href="https://osmand.net" target="_blank">
+        <div class="nav-ico">🧭</div>
+        <div class="nav-inf"><div class="nav-n">OsmAnd</div><div class="nav-d">Open Source — funciona offline</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PODCAST ═══════════════════════ -->
+<div id="screenPodcast" class="screen">
+  <div class="aa-header">
+    <button class="btn-back" onclick="go('screenHome')">←</button>
+    <div class="header-title">🎙️ Podcast</div>
+  </div>
+  <div class="screen-body">
+    <div class="stitle">Apps de podcast compatibles con Android Auto</div>
+    <div class="nav-list app-links">
+      <a class="nav-row" href="https://open.spotify.com/podcasts" target="_blank">
+        <div class="nav-ico">🎵</div>
+        <div class="nav-inf"><div class="nav-n">Spotify</div><div class="nav-d">Millones de podcasts — Integrado con Android Auto</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+      <a class="nav-row" href="https://www.ivoox.com" target="_blank">
+        <div class="nav-ico">🎙️</div>
+        <div class="nav-inf"><div class="nav-n">iVoox</div><div class="nav-d">Podcasts en español — App para Android Auto</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+      <a class="nav-row" href="https://pocketcasts.com" target="_blank">
+        <div class="nav-ico">📡</div>
+        <div class="nav-inf"><div class="nav-n">Pocket Casts</div><div class="nav-d">Gestor de podcasts — Compatible Android Auto</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+      <a class="nav-row" href="https://podcasts.google.com" target="_blank">
+        <div class="nav-ico">🎧</div>
+        <div class="nav-inf"><div class="nav-n">Google Podcasts</div><div class="nav-d">Integrado con Google — Android Auto nativo</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ MUSIC ═══════════════════════ -->
+<div id="screenMusic" class="screen">
+  <div class="aa-header">
+    <button class="btn-back" onclick="go('screenHome')">←</button>
+    <div class="header-title">🎵 Música</div>
+  </div>
+  <div class="screen-body">
+    <div class="stitle">Apps compatibles con Android Auto</div>
+    <div class="nav-list app-links">
+      <a class="nav-row" href="https://spotify.com" target="_blank">
+        <div class="nav-ico">🎵</div>
+        <div class="nav-inf"><div class="nav-n">Spotify</div><div class="nav-d">Streaming — Integración nativa Android Auto</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+      <a class="nav-row" href="https://music.youtube.com" target="_blank">
+        <div class="nav-ico">🎶</div>
+        <div class="nav-inf"><div class="nav-n">YouTube Music</div><div class="nav-d">Solo audio — Compatible con Android Auto</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+      <a class="nav-row" href="https://tidal.com" target="_blank">
+        <div class="nav-ico">🎧</div>
+        <div class="nav-inf"><div class="nav-n">TIDAL</div><div class="nav-d">Alta fidelidad — Android Auto compatible</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+      <a class="nav-row" href="https://deezer.com" target="_blank">
+        <div class="nav-ico">🎼</div>
+        <div class="nav-inf"><div class="nav-n">Deezer</div><div class="nav-d">Música en streaming — Soporte Android Auto</div></div>
+        <div class="nav-arr">›</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ SETTINGS ═══════════════════════ -->
+<div id="screenSettings" class="screen">
+  <div class="aa-header">
+    <button class="btn-back" onclick="go('screenHome')">←</button>
+    <div class="header-title">⚙️ Ajustes</div>
+  </div>
+  <div class="screen-body">
+    <div class="set-list">
+      <div class="set-row" onclick="cycleTheme()">
+        <div class="set-ico">🎨</div>
+        <div class="set-inf"><div class="set-t">Tema de color</div><div class="set-s" id="themeLabel">Azul (Por defecto)</div></div>
+        <div class="set-arr">›</div>
+      </div>
+      <div class="set-row" onclick="toggleUnit()">
+        <div class="set-ico">⚡</div>
+        <div class="set-inf"><div class="set-t">Unidad de velocidad</div><div class="set-s" id="unitLabel">KM/H</div></div>
+        <div class="set-arr">›</div>
+      </div>
+      <div class="set-row">
+        <div class="set-ico">🌍</div>
+        <div class="set-inf"><div class="set-t">Idioma</div><div class="set-s">Español</div></div>
+        <div class="set-arr">›</div>
+      </div>
+      <div class="set-row" onclick="go('screenSpeedo')">
+        <div class="set-ico">🏎️</div>
+        <div class="set-inf"><div class="set-t">Estilo de velocímetro</div><div class="set-s" id="brandLabel">AMG Performance</div></div>
+        <div class="set-arr">›</div>
+      </div>
+      <div class="set-row">
+        <div class="set-ico">📱</div>
+        <div class="set-inf"><div class="set-t">Versión</div><div class="set-s">AA Drive v1.0 — Prototipo HTML</div></div>
+        <div class="set-arr">›</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ─── CLOCK ────────────────────────────────────────────────────
+function tick() {
+  const n = new Date();
+  document.getElementById('homeClock').textContent =
+    String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+}
+tick(); setInterval(tick, 10000);
+
+// ─── WEATHER (Open-Meteo, no key needed) ──────────────────────
+async function loadWeather() {
+  try {
+    // Use a rough location (Spain center) if geolocation not available
+    const lat = 40.4, lon = -3.7;
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+    const d = await r.json();
+    document.getElementById('wTemp').textContent = Math.round(d.current_weather.temperature);
+    document.getElementById('wCity').textContent = 'España';
+  } catch(e) {}
+}
+loadWeather();
+
+// ─── NAVIGATION ───────────────────────────────────────────────
+const screens = document.querySelectorAll('.screen');
+function go(id) {
+  screens.forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screenSpeedo' && !speedoRunning) startSpeedo();
+  if (id === 'screenRadio' && !radioInited) initRadio();
+}
+
+// ─── RADIO ────────────────────────────────────────────────────
+const audioEl = document.getElementById('audioEl');
+let curStation = null, playing = false, radioInited = false;
+let favs    = JSON.parse(localStorage.getItem('aaDriveFavs')    || '[]');
+let recents = JSON.parse(localStorage.getItem('aaDriveRecents') || '[]');
+
+const API_SERVERS = ['de1','nl1','at1'];
+function apiServer() { return API_SERVERS[Math.floor(Math.random()*API_SERVERS.length)]; }
+
+async function apiFetch(path) {
+  try {
+    const r = await fetch(`https://${apiServer()}.api.radio-browser.info/json/${path}`);
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  } catch(e) { return null; }
+}
+
+// Fallback known-good Spanish streams
+const FALLBACK_ES = [
+  { stationuuid:'f1', name:'Los 40 Principales', url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40.mp3', tags:'pop,hits,españa', favicon:'https://www.los40.com/favicon.ico', countrycode:'ES' },
+  { stationuuid:'f2', name:'Cadena SER',          url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/SER.mp3', tags:'información,noticias', favicon:'', countrycode:'ES' },
+  { stationuuid:'f3', name:'Europa FM',            url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/EUROPAFM.mp3', tags:'dance,pop', favicon:'', countrycode:'ES' },
+  { stationuuid:'f4', name:'Cadena 100',           url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/CADENA100.mp3', tags:'pop,romántica', favicon:'', countrycode:'ES' },
+  { stationuuid:'f5', name:'Kiss FM España',       url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/KISSFMESPANA.mp3', tags:'dance,electrónica', favicon:'', countrycode:'ES' },
+  { stationuuid:'f6', name:'Dial',                 url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/DIAL.mp3', tags:'baladas,pop latino', favicon:'', countrycode:'ES' },
+  { stationuuid:'f7', name:'Radio Nacional',       url_resolved:'https://dispatcher.rndfnk.com/rne/rne1/mid/mp3', tags:'noticias,información', favicon:'', countrycode:'ES' },
+  { stationuuid:'f8', name:'Onda Cero',            url_resolved:'https://playerservices.streamtheworld.com/api/livestream-redirect/ONDACERO.mp3', tags:'noticias,actualidad', favicon:'', countrycode:'ES' },
+];
+
+async function initRadio() {
+  radioInited = true;
+  const reg = document.getElementById('regionalList');
+  const data = await apiFetch('stations/search?countrycode=ES&limit=20&hidebroken=true&order=votes&reverse=true') || FALLBACK_ES;
+  reg.innerHTML = '';
+  (data.slice(0,8)).forEach(s => reg.appendChild(mkStationEl(s)));
+}
+
+async function loadByCountry(cc, name) {
+  showList(name);
+  setLoading(true);
+  const data = await apiFetch(`stations/search?countrycode=${cc}&limit=40&hidebroken=true&order=votes&reverse=true`) || FALLBACK_ES;
+  renderStations(data);
+}
+
+async function loadTop() {
+  showList('🔥 Top Global');
+  setLoading(true);
+  const data = await apiFetch('stations/topvote/30') || FALLBACK_ES;
+  renderStations(data);
+}
+
+async function loadCountries() {
+  document.getElementById('rHome').style.display = 'none';
+  document.getElementById('rList').style.display = 'none';
+  document.getElementById('rCountries').style.display = 'block';
+  const el = document.getElementById('countryItems');
+  el.innerHTML = '<div class="loading"><div class="spin"></div></div>';
+
+  const all = await apiFetch('countries') || [];
+  const top = [
+    {name:'Spain', iso_3166_1:'ES', stationcount:'674', flag:'🇪🇸'},
+    {name:'United States', iso_3166_1:'US', stationcount:'', flag:'🇺🇸'},
+    {name:'United Kingdom', iso_3166_1:'GB', stationcount:'', flag:'🇬🇧'},
+    {name:'Germany', iso_3166_1:'DE', stationcount:'', flag:'🇩🇪'},
+    {name:'France', iso_3166_1:'FR', stationcount:'', flag:'🇫🇷'},
+    {name:'Italy', iso_3166_1:'IT', stationcount:'', flag:'🇮🇹'},
+    {name:'Brazil', iso_3166_1:'BR', stationcount:'', flag:'🇧🇷'},
+    {name:'Argentina', iso_3166_1:'AR', stationcount:'', flag:'🇦🇷'},
+    {name:'Mexico', iso_3166_1:'MX', stationcount:'', flag:'🇲🇽'},
+  ];
+  const flags = {ES:'🇪🇸',US:'🇺🇸',GB:'🇬🇧',DE:'🇩🇪',FR:'🇫🇷',IT:'🇮🇹',BR:'🇧🇷',AR:'🇦🇷',MX:'🇲🇽',
+                 PT:'🇵🇹',NL:'🇳🇱',AU:'🇦🇺',CA:'🇨🇦',PL:'🇵🇱',RU:'🇷🇺',JP:'🇯🇵',KR:'🇰🇷',TR:'🇹🇷'};
+
+  const list = all.length ? all.sort((a,b)=>b.stationcount-a.stationcount).slice(0,40) : top;
+  el.innerHTML = '';
+  list.forEach(c => {
+    const flag = flags[c.iso_3166_1] || '🌍';
+    const d = document.createElement('div');
+    d.className = 'st-item';
+    d.innerHTML = `<div class="st-logo">${flag}</div>
+      <div class="st-info">
+        <div class="st-name">${c.name}</div>
+        <div class="st-tags">${c.stationcount||''} emisoras</div>
+      </div>
+      <div style="color:var(--text-dim)">›</div>`;
+    d.onclick = () => loadByCountry(c.iso_3166_1, `${flag} ${c.name}`);
+    el.appendChild(d);
+  });
+}
+
+let searchTimeout = null;
+function onSearch(q) {
+  clearTimeout(searchTimeout);
+  if (q.length < 2) {
+    document.getElementById('rHome').style.display = 'block';
+    document.getElementById('rList').style.display = 'none';
+    document.getElementById('rCountries').style.display = 'none';
+    return;
+  }
+  searchTimeout = setTimeout(async () => {
+    showList(`🔍 "${q}"`);
+    setLoading(true);
+    const data = await apiFetch(`stations/search?name=${encodeURIComponent(q)}&limit=30&hidebroken=true`) || [];
+    renderStations(data);
+  }, 500);
+}
+
+function showFavs() {
+  showList('⭐ Favoritos');
+  if (favs.length === 0) {
+    document.getElementById('rItems').innerHTML = '<div class="loading">Pulsa 🤍 al escuchar una emisora para añadirla aquí.</div>';
+  } else renderStations(favs);
+}
+function showRecents() {
+  showList('🕐 Reproducidos recientemente');
+  if (recents.length === 0) {
+    document.getElementById('rItems').innerHTML = '<div class="loading">No hay emisoras recientes.</div>';
+  } else renderStations(recents);
+}
+
+function showList(title) {
+  document.getElementById('rHome').style.display = 'none';
+  document.getElementById('rCountries').style.display = 'none';
+  document.getElementById('rList').style.display = 'block';
+  document.getElementById('rListTitle').textContent = title;
+}
+function setLoading(on) {
+  if (on) document.getElementById('rItems').innerHTML = '<div class="loading"><div class="spin"></div></div>';
+}
+function renderStations(list) {
+  const el = document.getElementById('rItems');
+  el.innerHTML = '';
+  if (!list || !list.length) { el.innerHTML = '<div class="loading">Sin resultados.</div>'; return; }
+  list.forEach(s => el.appendChild(mkStationEl(s)));
+}
+
+function mkStationEl(s) {
+  const div = document.createElement('div');
+  div.className = 'st-item' + (curStation?.stationuuid === s.stationuuid ? ' playing' : '');
+  div.onclick = () => playStation(s);
+  const tags = (s.tags||'').split(',').filter(Boolean).slice(0,3).join(' · ') || 'Radio';
+  div.innerHTML = `
+    <div class="st-logo" id="logo_${s.stationuuid}">${s.favicon ? `<img src="${s.favicon}" onerror="this.parentNode.textContent='📻'">` : '📻'}</div>
+    <div class="st-info">
+      <div class="st-name">${s.name}</div>
+      <div class="st-tags">${tags}</div>
+    </div>
+    <button class="st-play" onclick="event.stopPropagation();playStation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      ${curStation?.stationuuid === s.stationuuid && playing ? '⏸' : '▶'}
+    </button>`;
+  return div;
+}
+
+function playStation(s) {
+  curStation = s;
+  recents = [s, ...recents.filter(r=>r.stationuuid!==s.stationuuid)].slice(0,15);
+  localStorage.setItem('aaDriveRecents', JSON.stringify(recents));
+
+  audioEl.src = s.url_resolved;
+  audioEl.play().then(() => {
+    playing = true;
+    document.getElementById('playBtn').textContent = '⏸';
+  }).catch(() => {
+    // Stream failed — try to inform user
+    playing = false;
+    document.getElementById('playBtn').textContent = '▶';
+    alert(`No se pudo conectar a: ${s.name}\nPrueba otra emisora.`);
+  });
+  showMiniPlayer(s);
+  updateFavBtn();
+}
+
+function togglePlay() {
+  if (!curStation) return;
+  if (playing) { audioEl.pause(); playing = false; document.getElementById('playBtn').textContent = '▶'; }
+  else          { audioEl.play();  playing = true;  document.getElementById('playBtn').textContent = '⏸'; }
+}
+
+function showMiniPlayer(s) {
+  const mp = document.getElementById('miniPlayer');
+  mp.classList.add('visible');
+  document.getElementById('mpName').textContent = s.name;
+  const logo = document.getElementById('mpLogo');
+  if (s.favicon) logo.innerHTML = `<img src="${s.favicon}" style="width:44px;height:44px;border-radius:10px;object-fit:cover" onerror="this.parentNode.textContent='📻'">`;
+  else logo.textContent = '📻';
+}
+
+function toggleFav() {
+  if (!curStation) return;
+  const idx = favs.findIndex(f=>f.stationuuid===curStation.stationuuid);
+  if (idx >= 0) favs.splice(idx,1); else favs.unshift(curStation);
+  localStorage.setItem('aaDriveFavs', JSON.stringify(favs));
+  updateFavBtn();
+}
+function updateFavBtn() {
+  const on = curStation && favs.some(f=>f.stationuuid===curStation.stationuuid);
+  document.getElementById('favBtn').textContent = on ? '❤️' : '🤍';
+}
+
+// ─── SPEEDOMETER ──────────────────────────────────────────────
+let speedUnit = 'kmh', brand = 'amg', speedoRunning = false;
+let curSpd = 0, maxSpd = 0, sumSpd = 0, cntSpd = 0;
+let tripA = 0, tripB = 0, totalKm = 0, lastCoords = null;
+let simSpd = 0, simDir = 1;
+
+const BRANDS = {
+  amg:     { name:'AMG Performance',     arcStart:'#cc0000', arcEnd:'#ff6600', ring:'#cc0000', label:'AMG', bg:'#0a0808' },
+  bmw:     { name:'BMW M Performance',   arcStart:'#0055cc', arcEnd:'#00aaff', ring:'#0088ff', label:'BMW M', bg:'#080a14' },
+  audi:    { name:'Audi Virtual Cockpit',arcStart:'#888888', arcEnd:'#ffffff', ring:'#bbbbbb', label:'AUDI', bg:'#0a0a0a' },
+  ferrari: { name:'Ferrari',             arcStart:'#cc0000', arcEnd:'#ff2200', ring:'#ff0000', label:'FERRARI', bg:'#120000' },
+  default: { name:'Digital',             arcStart:'#1d6aeb', arcEnd:'#00d4ff', ring:'#1d6aeb', label:'DIGITAL', bg:'#08111e' },
+};
+
+function setBrand(btn) {
+  brand = btn.dataset.b;
+  document.querySelectorAll('.bbtn').forEach(b=>b.classList.toggle('on', b===btn));
+  document.getElementById('brandLabel').textContent = BRANDS[brand].name;
+  drawSpeedo(curSpd);
+}
+
+function toggleUnit() {
+  speedUnit = speedUnit === 'kmh' ? 'mph' : 'kmh';
+  const lbl = speedUnit === 'kmh' ? 'KM/H' : 'MPH';
+  document.getElementById('unitBtn').textContent = lbl;
+  document.getElementById('unitLabel').textContent = lbl;
+  drawSpeedo(curSpd); updateStats();
+}
+
+function resetA() { tripA = 0; updateStats(); }
+function resetB() { tripB = 0; updateStats(); }
+
+function startSpeedo() {
+  speedoRunning = true;
+  drawSpeedo(0);
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(onGPS, onGPSErr, { enableHighAccuracy:true, maximumAge:500 });
+  } else { startSim(); }
+}
+
+function onGPS(pos) {
+  const b = document.getElementById('gpsBadge');
+  b.className = 'gps-badge ok';
+  b.textContent = `📡 GPS activo — ±${Math.round(pos.coords.accuracy)}m`;
+  let spd = (pos.coords.speed || 0) * (speedUnit==='kmh' ? 3.6 : 2.23694);
+  spd = Math.max(0, spd);
+  processSpeed(spd, pos.coords);
+}
+function onGPSErr(e) {
+  const b = document.getElementById('gpsBadge');
+  b.className = 'gps-badge';
+  b.textContent = '📡 Sin GPS — Modo simulación';
+  startSim();
+}
+
+let simInv = null;
+function startSim() {
+  if (simInv) return;
+  simInv = setInterval(() => {
+    simDir = (simSpd >= 140 ? -1 : simSpd <= 0 ? 1 : simDir);
+    simSpd += simDir * (Math.random() * 4);
+    simSpd = Math.max(0, Math.min(140, simSpd));
+    processSpeed(speedUnit==='kmh' ? simSpd : simSpd * 0.621, null);
+  }, 400);
+}
+
+function processSpeed(spd, coords) {
+  curSpd = spd;
+  if (spd > maxSpd) maxSpd = spd;
+  sumSpd += spd; cntSpd++;
+  if (coords && lastCoords) {
+    const d = haversine(lastCoords, coords);
+    tripA += d; tripB += d; totalKm += d;
+  }
+  if (coords) lastCoords = coords;
+  drawSpeedo(spd);
+  updateStats();
+}
+
+function updateStats() {
+  const u = speedUnit === 'kmh' ? ' km/h' : ' mph';
+  const du = speedUnit === 'kmh' ? ' km' : ' mi';
+  const toDisp = v => speedUnit === 'mph' ? v * 0.621 : v;
+  document.getElementById('sMax').textContent   = Math.round(maxSpd) + u;
+  document.getElementById('sAvg').textContent   = cntSpd ? Math.round(sumSpd/cntSpd) + u : '0' + u;
+  document.getElementById('sRpm').textContent   = (Math.max(0.8, curSpd/40)).toFixed(1) + 'k';
+  document.getElementById('sTripA').textContent = toDisp(tripA).toFixed(2) + du;
+  document.getElementById('sTripB').textContent = toDisp(tripB).toFixed(2) + du;
+  document.getElementById('sTotal').textContent = toDisp(totalKm).toFixed(2) + du;
+}
+
+function haversine(a, b) {
+  const R = 6371, r = Math.PI/180;
+  const dLat = (b.latitude - a.latitude)*r;
+  const dLon = (b.longitude - a.longitude)*r;
+  const x = Math.sin(dLat/2)**2 + Math.cos(a.latitude*r)*Math.cos(b.latitude*r)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+
+function drawSpeedo(spd) {
+  const canvas = document.getElementById('speedoCanvas');
+  const ctx = canvas.getContext('2d');
+  const t = BRANDS[brand];
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const R = Math.min(cx,cy) - 16;
+  const maxV = speedUnit === 'kmh' ? 240 : 150;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+  bg.addColorStop(0, '#1a1f30');
+  bg.addColorStop(1, t.bg);
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
+  ctx.fillStyle = bg; ctx.fill();
+
+  // Outer ring glow
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
+  ctx.strokeStyle = t.ring; ctx.lineWidth = 3; ctx.stroke();
+
+  const SA = Math.PI * 0.75, SW = Math.PI * 1.5;
+
+  // Track
+  ctx.beginPath(); ctx.arc(cx, cy, R-16, SA, SA+SW);
+  ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.stroke();
+
+  // Speed arc
+  if (spd > 0.5) {
+    const ratio = Math.min(spd / maxV, 1);
+    const arcGrad = ctx.createLinearGradient(0, H, W, 0);
+    arcGrad.addColorStop(0, t.arcStart);
+    arcGrad.addColorStop(1, t.arcEnd);
+    ctx.beginPath(); ctx.arc(cx, cy, R-16, SA, SA + SW*ratio);
+    ctx.strokeStyle = arcGrad; ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.stroke();
+
+    // Glow tip
+    const tipAngle = SA + SW*ratio;
+    const tx = cx + Math.cos(tipAngle)*(R-16);
+    const ty = cy + Math.sin(tipAngle)*(R-16);
+    const glow = ctx.createRadialGradient(tx,ty,0,tx,ty,16);
+    glow.addColorStop(0, t.arcEnd + 'cc');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(tx, ty, 16, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Tick marks & labels
+  const steps = 12;
+  for (let i = 0; i <= steps; i++) {
+    const a = SA + (i/steps)*SW;
+    const major = i % 2 === 0;
+    const inner = R - (major ? 32 : 26);
+    const outer = R - 6;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a)*inner, cy + Math.sin(a)*inner);
+    ctx.lineTo(cx + Math.cos(a)*outer, cy + Math.sin(a)*outer);
+    ctx.strokeStyle = major ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.3)';
+    ctx.lineWidth = major ? 2 : 1; ctx.stroke();
+    if (major) {
+      const v = Math.round((i/steps)*maxV);
+      const lr = inner - 14;
+      ctx.fillStyle = 'rgba(255,255,255,.55)';
+      ctx.font = '10px Rajdhani';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(v, cx + Math.cos(a)*lr, cy + Math.sin(a)*lr);
+    }
+  }
+
+  // Brand label (top)
+  ctx.fillStyle = 'rgba(255,255,255,.45)';
+  ctx.font = '700 13px Rajdhani';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(t.label, cx, cy - R*0.42);
+
+  // RPM label
+  ctx.fillStyle = 'rgba(255,255,255,.3)';
+  ctx.font = '12px Rajdhani';
+  ctx.fillText(((Math.max(0.8, spd/40)).toFixed(1)) + 'k RPM', cx, cy - R*0.26);
+
+  // Big speed number
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `900 ${Math.round(R*0.46)}px Orbitron`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(Math.round(spd), cx, cy + R*0.04);
+
+  // Unit
+  ctx.font = `700 15px Rajdhani`;
+  ctx.fillStyle = t.arcEnd;
+  ctx.fillText(speedUnit === 'kmh' ? 'KM/H' : 'MPH', cx, cy + R*0.32);
+
+  // Center dot
+  ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI*2);
+  ctx.fillStyle = t.ring; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+// ─── SETTINGS THEME ───────────────────────────────────────────
+const THEMES = [
+  { name:'Azul',        bg:'#070b12', card:'#14223a', accent:'#1d6aeb' },
+  { name:'Rojo Sport',  bg:'#0f0505', card:'#2a1010', accent:'#ef4444' },
+  { name:'Verde Noche', bg:'#030f08', card:'#0a2414', accent:'#22c55e' },
+  { name:'Violeta',     bg:'#08050f', card:'#1a1030', accent:'#8b5cf6' },
+];
+let themeIdx = 0;
+function cycleTheme() {
+  themeIdx = (themeIdx + 1) % THEMES.length;
+  const t = THEMES[themeIdx];
+  document.documentElement.style.setProperty('--bg', t.bg);
+  document.documentElement.style.setProperty('--card', t.card);
+  document.documentElement.style.setProperty('--accent', t.accent);
+  document.getElementById('themeLabel').textContent = t.name;
+}
+</script>
+</body>
+</html>
